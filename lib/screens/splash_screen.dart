@@ -16,10 +16,10 @@ class SplashScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.sports_soccer, size: 120, color: Colors.green),
+            const Icon(Icons.fitness_center, size: 120, color: Color(0xFFC0C0C0)), // dumbbell (silver)
             const SizedBox(height: 20),
             Text(
-              'GoalBuddy', // Updated App Name
+              'CoachFitness', // Updated App Name
               style: TextStyle(
                 fontSize: 40,
                 fontWeight: FontWeight.w900,
@@ -28,7 +28,7 @@ class SplashScreen extends StatelessWidget {
             ),
             // New Tagline
             const Text(
-              'Football Fun for Every Young Champion!', 
+              'Make Exercise Fun for Everyone!', 
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w500,

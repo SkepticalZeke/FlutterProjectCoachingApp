@@ -51,14 +51,14 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
           IconButton(
             icon: const Icon(Icons.notifications),
             onPressed: () {
-              Navigator.of(context).pushNamed('/parent-notifications');
+              Navigator.of(context).pushNamed('/coach-notifications');
             },
           ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
               // Implement Parent Logout logic here
-              Navigator.of(context).pushNamedAndRemoveUntil('/parent-login', (route) => false);
+              Navigator.of(context).pushNamedAndRemoveUntil('/coach-login', (route) => false);
             },
           ),
         ],

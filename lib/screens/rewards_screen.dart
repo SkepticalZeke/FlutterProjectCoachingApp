@@ -21,7 +21,7 @@ class RewardsScreen extends StatelessWidget {
     {'name': 'Shooting Star', 'unlocked': false, 'icon': Icons.adjust, 'color': Colors.grey},
     {'name': 'Level 10', 'unlocked': false, 'icon': Icons.rocket_launch, 'color': Colors.grey},
     {'name': 'First Kit', 'unlocked': false, 'icon': Icons.checkroom, 'color': Colors.grey},
-    {'name': 'GoalBuddy Pro', 'unlocked': false, 'icon': Icons.shield, 'color': Colors.grey},
+    {'name': 'Fitness Pro', 'unlocked': false, 'icon': Icons.shield, 'color': Colors.grey},
   ];
 
   // Mock player stats

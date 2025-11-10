@@ -30,9 +30,9 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> {
         });
         
         // 2. Navigation
-        // Ensure the route name exactly matches the one in main.dart: /parent-home
-        Navigator.of(context).pushReplacementNamed('/parent-home'); 
-        debugPrint('Navigation to /parent-home successful.');
+        // Ensure the route name exactly matches the one in main.dart: /coach-home
+        Navigator.of(context).pushReplacementNamed('/coach-home'); 
+        debugPrint('Navigation to /coach-home successful.');
       });
     } else {
       debugPrint('Validation Failed. Not navigating.');
@@ -50,7 +50,7 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Parent Guardian Access'),
+        title: const Text('Coach Access'),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
       ),
@@ -124,7 +124,7 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> {
                           ),
                         )
                       : const Text(
-                          'Parent Login',
+                          'Login',
                           style: TextStyle(fontSize: 18),
                         ),
                 ),
@@ -136,7 +136,7 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> {
                     // This will open the feature for parents to link to a child account (future feature)
                   },
                   child: Text(
-                    'Need a Child Join Code?',
+                    'Have a User Join Code?',
                     style: TextStyle(color: Theme.of(context).primaryColor),
                   ),
                 ),

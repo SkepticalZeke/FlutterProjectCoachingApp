@@ -24,7 +24,7 @@ class _ParentRegistrationScreenState extends State<ParentRegistrationScreen> {
       // --- Firebase Placeholder ---
       // 1. Create Parent Account (Email/Password Auth).
       // 2. Create the first Child Document (linking it to the parent's UID), storing name and PIN.
-      debugPrint('Attempting Parent Registration and Child Setup...');
+      debugPrint('Attempting Coach Registration and User Setup...');
 
       Future.delayed(const Duration(seconds: 3), () {
         setState(() {
@@ -33,11 +33,11 @@ class _ParentRegistrationScreenState extends State<ParentRegistrationScreen> {
         
         // After successful registration, navigate Parent to their dashboard
         Navigator.of(context).pushNamedAndRemoveUntil(
-          '/parent-home',
+          '/coach-home',
           (Route<dynamic> route) => false, // Clears the stack
         );
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Account created! Welcome to GoalBuddy.')),
+          const SnackBar(content: Text('Account created! Welcome to CoachFitness.')),
         );
       });
     }
@@ -55,7 +55,7 @@ class _ParentRegistrationScreenState extends State<ParentRegistrationScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Parent Sign Up')),
+      appBar: AppBar(title: const Text('Coach Sign Up')),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(32.0),
@@ -67,7 +67,7 @@ class _ParentRegistrationScreenState extends State<ParentRegistrationScreen> {
                 const Icon(Icons.group_add, size: 60, color: Colors.green),
                 const SizedBox(height: 10),
                 const Text(
-                  'Create Your Guardian Account',
+                  'Create Your Coach Account',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
@@ -75,7 +75,7 @@ class _ParentRegistrationScreenState extends State<ParentRegistrationScreen> {
 
                 // --- Parent Account Details ---
                 Text(
-                  '1. Guardian Account',
+                  '1. Coach Account',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Theme.of(context).primaryColor),
                 ),
                 const SizedBox(height: 10),
@@ -94,7 +94,7 @@ class _ParentRegistrationScreenState extends State<ParentRegistrationScreen> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
-                  decoration: const InputDecoration(labelText: 'Password (min 6 chars)', prefixIcon: Icon(Icons.lock)),
+                  decoration: const InputDecoration(labelText: 'Password (min 6 characters)', prefixIcon: Icon(Icons.lock)),
                   validator: (value) {
                     if (value == null || value.length < 6) return 'Password must be at least 6 characters.';
                     return null;
@@ -104,16 +104,16 @@ class _ParentRegistrationScreenState extends State<ParentRegistrationScreen> {
 
                 // --- Child Player Details ---
                 Text(
-                  '2. First Player Setup',
+                  '2. First User Setup',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Theme.of(context).primaryColor),
                 ),
                 const SizedBox(height: 10),
 
                 TextFormField(
                   controller: _playerNameController,
-                  decoration: const InputDecoration(labelText: 'Player Name / Nickname', prefixIcon: Icon(Icons.person)),
+                  decoration: const InputDecoration(labelText: ' Name / Nickname', prefixIcon: Icon(Icons.person)),
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'Please enter a nickname for your child.';
+                    if (value == null || value.isEmpty) return 'Please enter a nickname for the user.';
                     return null;
                   },
                 ),
@@ -125,7 +125,7 @@ class _ParentRegistrationScreenState extends State<ParentRegistrationScreen> {
                   maxLength: 4,
                   obscureText: true,
                   decoration: const InputDecoration(
-                    labelText: '4-Digit PIN (for player login)',
+                    labelText: '4-Digit PIN (for user login)',
                     counterText: '',
                     prefixIcon: Icon(Icons.lock_outline),
                   ),
@@ -156,9 +156,9 @@ class _ParentRegistrationScreenState extends State<ParentRegistrationScreen> {
                 // Back to Login
                 TextButton(
                   onPressed: _isLoading ? null : () {
-                    Navigator.of(context).pushReplacementNamed('/parent-login');
+                    Navigator.of(context).pushReplacementNamed('/coach-login');
                   },
-                  child: Text('Already have a Guardian account? Log In.', style: TextStyle(color: Colors.grey[700])),
+                  child: Text('Already have a Coach account? Log In.', style: TextStyle(color: Colors.grey[700])),
                 ),
               ],
             ),

@@ -67,7 +67,7 @@ class _ChildDashboardScreenState extends State<ChildDashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('GoalBuddy Training'),
+        title: const Text('CoachFitness Training'),
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,

@@ -27,7 +27,7 @@ class FootballSkillsApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Kids Football Skills',
+      title: 'CoachFitness',
       debugShowCheckedModeBanner: false,
 
       // --- 🎨 App Theme: Vibrant Football Colors ---
@@ -71,10 +71,10 @@ class FootballSkillsApp extends StatelessWidget {
         '/settings': (context) => const SettingsScreen(), // Settings
 
         // Parent Flow
-        '/parent-login': (context) => const ParentLoginScreen(),
-        '/parent-home': (context) => const ParentDashboardScreen(),
-        '/parent-registration': (context) => const ParentRegistrationScreen(), 
-        '/parent-notifications': (context) => const ParentNotificationsScreen(),
+        '/coach-login': (context) => const ParentLoginScreen(),
+        '/coach-home': (context) => const ParentDashboardScreen(),
+        '/coach-registration': (context) => const ParentRegistrationScreen(), 
+        '/coach-notifications': (context) => const ParentNotificationsScreen(),
       },
       // Using onGenerateRoute to handle passing arguments (like the name/data)
       onGenerateRoute: (settings) {
@@ -92,7 +92,7 @@ class FootballSkillsApp extends StatelessWidget {
           return MaterialPageRoute(
             builder: (context) {
               // Pass the received name, or a default name if null
-              return ChildDashboardScreen(playerName: playerName ?? 'Future Star');
+              return ChildDashboardScreen(playerName: playerName ?? 'Player');
             },
           );
         } else if (settings.name == '/drill-detail') {

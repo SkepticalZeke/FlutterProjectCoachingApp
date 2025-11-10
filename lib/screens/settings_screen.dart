@@ -71,7 +71,7 @@ class SettingsScreen extends StatelessWidget {
               children: [
                 _buildSettingsTile(
                   context: context,
-                  title: 'Edit Player Name',
+                  title: 'Edit User Name',
                   icon: Icons.person,
                   onTap: () {
                     // Placeholder: Show dialog to edit name
@@ -144,7 +144,7 @@ class SettingsScreen extends StatelessWidget {
                 const Divider(height: 1, indent: 16),
                 _buildSettingsTile(
                   context: context,
-                  title: 'Contact Parent/Guardian',
+                  title: 'Contact CoachFitness Support',
                   icon: Icons.family_restroom,
                   onTap: () {},
                 ),

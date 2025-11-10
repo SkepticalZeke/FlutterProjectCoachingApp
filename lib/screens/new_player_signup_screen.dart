@@ -39,7 +39,7 @@ class _NewPlayerSignupScreenState extends State<NewPlayerSignupScreen> {
           arguments: _nameController.text.trim(),
         );
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration complete! Welcome to GoalBuddy.')),
+          const SnackBar(content: Text('Registration complete! Welcome to CoachFitness.')),
         );
       });
     }
@@ -148,7 +148,7 @@ class _NewPlayerSignupScreenState extends State<NewPlayerSignupScreen> {
                           child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3),
                         )
                       : const Text(
-                          'Join Team GoalBuddy',
+                          'Join Team and Start',
                           style: TextStyle(fontSize: 18),
                         ),
                 ),

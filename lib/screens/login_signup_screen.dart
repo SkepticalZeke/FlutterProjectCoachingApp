@@ -19,7 +19,7 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
       
       // --- Firebase Placeholder ---
       // Here you would check if the playerName and PIN match a stored child record.
-      debugPrint('Attempting child login for $playerName with PIN $pin');
+      debugPrint('Attempting login for $playerName with PIN $pin');
 
       // Simulate network delay and assumed success
       Future.delayed(const Duration(seconds: 1), () {
@@ -42,7 +42,7 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('GoalBuddy: Player Access')),
+      appBar: AppBar(title: const Text('CoachFitness Login')),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(32.0),
@@ -55,7 +55,7 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                 const Icon(Icons.person_pin, size: 80, color: Colors.green),
                 const SizedBox(height: 10),
                 const Text(
-                  'Welcome Back, Future Star!',
+                  'Welcome Back, User!',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
@@ -65,13 +65,13 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                 TextFormField(
                   controller: _playerNameController,
                   decoration: const InputDecoration(
-                    labelText: 'Player Name / Nickname',
+                    labelText: 'Name / Nickname',
                     border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                     prefixIcon: Icon(Icons.person),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your Player Name';
+                      return 'Please enter your User Name';
                     }
                     return null;
                   },
@@ -118,7 +118,7 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                 TextButton(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Contact your parent to recover your name or PIN.')),
+                      const SnackBar(content: Text('Contact your coach to recover your name or PIN.')),
                     );
                   },
                   child: const Text('Forgot Name or PIN?', style: TextStyle(color: Colors.grey)),
@@ -128,13 +128,13 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                 OutlinedButton(
                   onPressed: () {
                     // Navigate to the Parent Registration screen for account setup
-                    Navigator.of(context).pushNamed('/parent-registration');
+                    Navigator.of(context).pushNamed('/coach-registration');
                   },
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     side: const BorderSide(color: Colors.amber),
                   ),
-                  child: const Text('New Player? Parent Sign Up Here', style: TextStyle(color: Colors.amber)),
+                  child: const Text('New User? Coach Sign Up Here', style: TextStyle(color: Colors.amber)),
                 ),
 
                 const SizedBox(height: 30),
@@ -142,9 +142,9 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                 // --- Parent Access Login ---
                 TextButton(
                   onPressed: () {
-                    Navigator.of(context).pushNamed('/parent-login');
+                    Navigator.of(context).pushNamed('/coach-login');
                   },
-                  child: const Text('Already a Parent Guardian? Log In'),
+                  child: const Text('Already a Coach? Log In'),
                 ),
               ],
             ),

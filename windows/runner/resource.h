@@ -3,6 +3,7 @@
 // Used by Runner.rc
 //
 #define IDI_APP_ICON                    101
+#define IDS_APP_TITLE 103
 
 // Next default values for new objects
 //

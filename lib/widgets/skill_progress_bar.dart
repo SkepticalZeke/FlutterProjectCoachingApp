@@ -15,20 +15,16 @@ class SkillProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final progress = currentXp / requiredXp;
+    // 1. UI Theme: Get theme from context
+    final theme = Theme.of(context);
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        // 2. UI Theme: Use theme surface color instead of Colors.white
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 2,
-            blurRadius: 5,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        // 3. UI Theme: Removed shadow, as it's not visible on dark theme
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,11 +34,13 @@ class SkillProgressBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Level $level: Rookie Star',
+                // 4. Text Refactor: Generalized "Rookie Star"
+                'Level $level: Rising Star',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).primaryColor,
+                  // 5. UI Theme: This will now correctly use the (cyan) primary color
+                  color: theme.colorScheme.primary,
                 ),
               ),
               Text(
@@ -50,7 +48,8 @@ class SkillProgressBar extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey[600],
+                  // 6. UI Theme: Use a light, secondary text color
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
                 ),
               ),
             ],
@@ -63,7 +62,9 @@ class SkillProgressBar extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 12,
-              backgroundColor: Colors.grey[300],
+              // 7. UI Theme: Use a subtle background for the bar
+              backgroundColor: theme.colorScheme.onSurface.withOpacity(0.1),
+              // 8. UI Theme: Kept Amber for XP, it's a great accent color
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
             ),
           ),
@@ -71,8 +72,13 @@ class SkillProgressBar extends StatelessWidget {
 
           // Unlock message
           Text(
-            '${(requiredXp - currentXp).toInt()} XP until your new Kit!',
-            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            // 9. Text Refactor: Changed "new Kit" to "next Level"
+            '${(requiredXp - currentXp).toInt()} XP until the next Level!',
+            style: TextStyle(
+              fontSize: 14,
+              // 10. UI Theme: Use a light, secondary text color
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
+            ),
           ),
         ],
       ),

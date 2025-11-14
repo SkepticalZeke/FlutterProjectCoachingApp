@@ -9,7 +9,8 @@ class ProgressScreen extends StatefulWidget {
   State<ProgressScreen> createState() => _ProgressScreenState();
 }
 
-class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProviderStateMixin {
+class _ProgressScreenState extends State<ProgressScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   // Mock data for completed training days (now used!)
@@ -21,11 +22,11 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
     DateTime.now().subtract(const Duration(days: 7)),
   ];
 
-  // Mock data for skill growth (out of 100)
+  // 1. Mock Data refactored: General fitness terms
   final Map<String, double> skillProgress = {
-    'Dribbling': 75.0,
-    'Passing': 50.0,
-    'Shooting': 30.0,
+    'Agility': 75.0, // Was Dribbling
+    'Strength': 50.0, // Was Passing
+    'Cardio': 30.0, // Was Shooting
     'Stamina': 60.0,
   };
 
@@ -52,16 +53,19 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
+    // 2. UI Theme: Get theme from context
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Progress'),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
+        // 3. UI Theme: Removed colors, uses main.dart theme
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.amber,
-          unselectedLabelColor: Colors.white60,
-          labelColor: Colors.white,
+          // 4. UI Theme: Use primary cyan for indicator and labels
+          indicatorColor: theme.colorScheme.primary,
+          labelColor: theme.colorScheme.primary,
+          unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(0.7),
           tabs: const [
             Tab(icon: Icon(Icons.calendar_month), text: 'Calendar'),
             Tab(icon: Icon(Icons.show_chart), text: 'Skill Growth'),
@@ -80,94 +84,128 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
 
   // --- Tab 1: Calendar View (Section 7) ---
   Widget _buildCalendarView(BuildContext context) {
+    final theme = Theme.of(context);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.15),
-                  spreadRadius: 2,
-                  blurRadius: 5,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            // REPLACED CalendarDatePicker with TableCalendar
-            child: TableCalendar(
-              firstDay: DateTime(2020),
-              lastDay: DateTime(2030),
-              focusedDay: _focusedDay,
-              calendarFormat: CalendarFormat.month,
-              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-              onDaySelected: (selectedDay, focusedDay) {
-                setState(() {
-                  _selectedDay = selectedDay;
+          // 5. UI Theme: Replaced Container with Card
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              // REPLACED CalendarDatePicker with TableCalendar
+              child: TableCalendar(
+                firstDay: DateTime(2020),
+                lastDay: DateTime(2030),
+                focusedDay: _focusedDay,
+                calendarFormat: CalendarFormat.month,
+                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                onDaySelected: (selectedDay, focusedDay) {
+                  setState(() {
+                    _selectedDay = selectedDay;
+                    _focusedDay = focusedDay;
+                  });
+                },
+                onPageChanged: (focusedDay) {
                   _focusedDay = focusedDay;
-                });
-              },
-              onPageChanged: (focusedDay) {
-                _focusedDay = focusedDay;
-              },
-              // THIS IS WHERE THE GREEN CIRCLES ARE MADE
-              calendarBuilders: CalendarBuilders(
-                defaultBuilder: (context, day, focusedDay) {
-                  if (_isDayCompleted(day)) {
-                    return Container(
-                      margin: const EdgeInsets.all(4.0),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.3),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '${day.day}',
-                          style: const TextStyle(color: Colors.black),
+                },
+                // 6. UI Theme: Styling for Dark Mode
+                calendarStyle: CalendarStyle(
+                  // Default text
+                  defaultTextStyle:
+                      TextStyle(color: theme.colorScheme.onSurface),
+                  // Weekend text
+                  weekendTextStyle: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                  // Text for other months
+                  outsideTextStyle: TextStyle(
+                      color: theme.colorScheme.onSurface.withOpacity(0.3)),
+                  // Today's marker
+                  todayDecoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withOpacity(0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  // Selected day marker
+                  selectedDecoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                // 7. UI Theme: Styling for Header
+                headerStyle: HeaderStyle(
+                  titleCentered: true,
+                  formatButtonVisible: false,
+                  titleTextStyle: theme.textTheme.titleLarge!,
+                  leftChevronIcon: Icon(Icons.chevron_left,
+                      color: theme.colorScheme.onSurface),
+                  rightChevronIcon: Icon(Icons.chevron_right,
+                      color: theme.colorScheme.onSurface),
+                ),
+                // THIS IS WHERE THE GREEN CIRCLES ARE MADE
+                calendarBuilders: CalendarBuilders(
+                  // 8. UI Theme: Builder for completed days
+                  defaultBuilder: (context, day, focusedDay) {
+                    if (_isDayCompleted(day)) {
+                      return Container(
+                        margin: const EdgeInsets.all(4.0),
+                        decoration: BoxDecoration(
+                          // Use a more visible green
+                          color: Colors.green.withOpacity(0.5),
+                          shape: BoxShape.circle,
                         ),
+                        child: Center(
+                          child: Text(
+                            '${day.day}',
+                            // Use white text
+                            style:
+                                TextStyle(color: theme.colorScheme.onSurface),
+                          ),
+                        ),
+                      );
+                    }
+                    return null;
+                  },
+                  // 9. UI Theme: Today's date (if not completed)
+                  todayBuilder: (context, day, focusedDay) {
+                    if (_isDayCompleted(day)) {
+                      // Handle if today is also completed
+                      return Container(
+                        margin: const EdgeInsets.all(4.0),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.5),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${day.day}',
+                            style:
+                                TextStyle(color: theme.colorScheme.onSurface),
+                          ),
+                        ),
+                      );
+                    }
+                    // Default "today" builder (cyan circle)
+                    return Center(
+                      child: Text(
+                        '${day.day}',
+                        style: TextStyle(
+                            color: theme.colorScheme.primary,
+                            fontWeight: FontWeight.bold),
                       ),
                     );
-                  }
-                  return null;
-                },
-                todayBuilder: (context, day, focusedDay) {
-                  if (_isDayCompleted(day)) {
-                     return Container(
-                      margin: const EdgeInsets.all(4.0),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.3),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '${day.day}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
-                        ),
-                      ),
-                    );
-                  }
-                  return Center(
-                    child: Text(
-                      '${day.day}',
-                      style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold),
-                    ),
-                  );
-                },
-              ),
-              headerStyle: const HeaderStyle(
-                titleCentered: true,
-                formatButtonVisible: false,
+                  },
+                ),
               ),
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'Green circles mark completed training days!',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
+            // 10. UI Theme: Use light secondary text
+            style: TextStyle(
+                fontSize: 16,
+                color: theme.colorScheme.onSurface.withOpacity(0.7)),
           ),
         ],
       ),
@@ -176,47 +214,50 @@ class _ProgressScreenState extends State<ProgressScreen> with SingleTickerProvid
 
   // --- Tab 2: Skill Growth (Section 7) ---
   Widget _buildSkillGrowthView(BuildContext context) {
+    final theme = Theme.of(context);
+
     return ListView(
       padding: const EdgeInsets.all(20.0),
       children: [
         Text(
           'XP Growth Over Time',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey[800],
-          ),
+          // 11. UI Theme: Use themed title
+          style: theme.textTheme.titleLarge
+              ?.copyWith(color: theme.colorScheme.primary),
         ),
         const SizedBox(height: 10),
-        Container(
-          height: 200,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.bar_chart, size: 50, color: Colors.blueGrey),
-                SizedBox(height: 10),
-                Text(
-                  'XP Line Chart Placeholder',
-                  style: TextStyle(color: Colors.blueGrey, fontSize: 16),
-                ),
-              ],
+        // 12. UI Theme: Chart placeholder as Card
+        Card(
+          child: Container(
+            height: 200,
+            padding: const EdgeInsets.all(16),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // 13. UI Theme: Themed placeholder icon
+                  Icon(Icons.bar_chart,
+                      size: 50,
+                      color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                  const SizedBox(height: 10),
+                  Text(
+                    'XP Line Chart Placeholder',
+                    // 14. UI Theme: Themed placeholder text
+                    style: TextStyle(
+                        color: theme.colorScheme.onSurface.withOpacity(0.5),
+                        fontSize: 16),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
         const SizedBox(height: 30),
         Text(
           'Current Skill Levels',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey[800],
-          ),
+          // 15. UI Theme: Use themed title
+          style: theme.textTheme.titleLarge
+              ?.copyWith(color: theme.colorScheme.primary),
         ),
         const SizedBox(height: 15),
         // Displaying skill progress bars
@@ -244,8 +285,12 @@ class SkillProgressIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color progressColor = Color.lerp(Colors.red, Colors.green, progress / 100)!;
-    
+    // 16. UI Theme: Get theme from context
+    final theme = Theme.of(context);
+    // Semantic color (red-to-green) is great, keep it
+    final Color progressColor =
+        Color.lerp(Colors.red, Colors.green, progress / 100)!;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10.0),
       child: Column(
@@ -256,11 +301,16 @@ class SkillProgressIndicator extends StatelessWidget {
             children: [
               Text(
                 skillName,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                // 17. UI Theme: Use theme text style
+                style: theme.textTheme.titleMedium,
               ),
               Text(
                 '${progress.toInt()}/100',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: progressColor),
+                // Semantic color is good, keep it
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: progressColor),
               ),
             ],
           ),
@@ -270,7 +320,8 @@ class SkillProgressIndicator extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress / 100,
               minHeight: 10,
-              backgroundColor: Colors.grey[300],
+              // 18. UI Theme: Use dark-friendly background
+              backgroundColor: theme.colorScheme.onSurface.withOpacity(0.1),
               valueColor: AlwaysStoppedAnimation<Color>(progressColor),
             ),
           ),

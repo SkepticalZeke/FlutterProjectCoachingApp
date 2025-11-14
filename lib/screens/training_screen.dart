@@ -1,85 +1,93 @@
-import 'package:flutter/material.dart'; 
+import 'package:flutter/material.dart';
 
 class TrainingScreen extends StatelessWidget {
   const TrainingScreen({super.key});
 
-  // Mock Data for all available drills in the app
+  // 1. Mock Data refactored: General fitness drills
   final List<Map<String, dynamic>> allDrills = const [
     {
-      'name': 'Cone Dribbling Challenge',
-      'goal': 'Complete 10 laps of a 5-cone course in under 90 seconds.',
+      'name': 'Agility Ladder Drills',
+      'goal': 'Complete 3 sets of the "Ickey Shuffle" drill.',
       'time': 90,
-      'category': 'Dribbling',
-      'icon': Icons.directions_run,
-      'color': Colors.green
+      'category': 'Agility', // Changed
+      'icon': Icons.directions_run, // Good icon
+      'color': Colors.blue // Agility
     },
     {
-      'name': 'Wall Pass Precision',
-      'goal': 'Complete 30 accurate passes against a wall in 60 seconds.',
-      'time': 60,
-      'category': 'Passing',
-      'icon': Icons.compare_arrows,
-      'color': Colors.blue
+      'name': 'Bodyweight Strength',
+      'goal': 'Complete 3 sets of 15 push-ups and 20 squats.',
+      'time': 120,
+      'category': 'Strength', // Changed
+      'icon': Icons.fitness_center, // Good icon
+      'color': Colors.red // Strength
     },
     {
-      'name': 'Juggling Basics',
-      'goal': 'Try to get 10 juggles in a row. Practice for 5 minutes.',
+      'name': 'High-Intensity Sprints',
+      'goal': 'Perform 10 sprints of 30 seconds each.',
       'time': 300,
-      'category': 'Control',
-      'icon': Icons.sports_soccer,
-      'color': Colors.orange
+      'category': 'Cardio', // Changed
+      'icon': Icons.timer, // Good icon
+      'color': Colors.orange // Cardio
     },
     {
-      'name': 'Shooting Accuracy',
-      'goal': 'Hit 5 targets (cones) from 10 yards out.',
+      'name': 'Plyometric Box Jumps',
+      'goal': '3 sets of 10 box jumps.',
       'time': 180,
-      'category': 'Shooting',
-      'icon': Icons.adjust,
-      'color': Colors.red
+      'category': 'Strength', // Changed
+      'icon': Icons.arrow_upward, // Good icon
+      'color': Colors.red // Strength
     },
     {
       'name': 'Stretching & Cool Down',
       'goal': 'Hold each stretch for 30 seconds.',
       'time': 120,
-      'category': 'Fitness',
-      'icon': Icons.self_improvement,
-      'color': Colors.purple
+      'category': 'Flexibility', // Changed
+      'icon': Icons.self_improvement, // Good icon
+      'color': Colors.purple // Flexibility
     },
   ];
 
   @override
   Widget build(BuildContext context) {
+    // 2. UI Theme: Get theme from context
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('All Drills'),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
+        // 3. UI Theme: Removed colors, uses main.dart theme
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(10.0),
         itemCount: allDrills.length,
         itemBuilder: (context, index) {
           final drill = allDrills[index];
-          
+
           return Card(
+            // 4. UI Theme: Card style comes from main.dart
             margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-            elevation: 3,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             child: ListTile(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               leading: Icon(
                 drill['icon'] as IconData,
+                // 5. UI Theme: Semantic color is good, keep it
                 color: drill['color'] as Color,
                 size: 40,
               ),
               title: Text(
                 drill['name'] as String,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                // 6. UI Theme: Text uses theme color
+                style:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
+              // 7. UI Theme: Subtitle uses lighter theme color
               subtitle: Text(drill['category'] as String),
-              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+              // 8. UI Theme: Chevron uses theme color
+              trailing: Icon(Icons.chevron_right,
+                  color: theme.colorScheme.onSurface.withOpacity(0.5)),
               onTap: () {
-                // Navigate to the detail screen, passing the drill data
+                // Navigation is correct
                 Navigator.of(context).pushNamed(
                   '/drill-detail',
                   arguments: drill,

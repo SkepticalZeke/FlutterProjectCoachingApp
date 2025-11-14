@@ -40,6 +40,7 @@ class _DrillDetailScreenState extends State<DrillDetailScreen> {
     super.dispose();
   }
 
+  // --- Timer logic (no changes needed) ---
   void _startTimer() {
     if (_isCompleted) {
       _resetTimer();
@@ -55,9 +56,12 @@ class _DrillDetailScreenState extends State<DrillDetailScreen> {
         });
       } else {
         _timer?.cancel();
-        _isRunning = false;
+        setState(() {
+          _isRunning = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Time\'s up! Try again or mark as done.')),
+          const SnackBar(
+              content: Text('Time\'s up! Try again or mark as done.')),
         );
       }
     });
@@ -85,7 +89,10 @@ class _DrillDetailScreenState extends State<DrillDetailScreen> {
     });
     // --- Firebase Placeholder ---
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Drill Complete! 50 XP awarded!', style: TextStyle(fontWeight: FontWeight.bold))),
+      // 1. Text refactored: General "XP"
+      const SnackBar(
+          content: Text('Drill Complete! 50 XP awarded!',
+              style: TextStyle(fontWeight: FontWeight.bold))),
     );
     Future.delayed(const Duration(seconds: 2), () {
       Navigator.of(context).pop();
@@ -98,6 +105,7 @@ class _DrillDetailScreenState extends State<DrillDetailScreen> {
     return '$minutes:$remainingSeconds';
   }
 
+  // --- 2. UI Theme: Updated Action Buttons ---
   Widget _buildActionButton() {
     if (_isCompleted) {
       return ElevatedButton.icon(
@@ -105,7 +113,9 @@ class _DrillDetailScreenState extends State<DrillDetailScreen> {
         icon: const Icon(Icons.refresh),
         label: const Text('Try Again'),
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.blueGrey,
+          // Use a neutral dark grey for "Try Again"
+          backgroundColor: Colors.grey[800],
+          foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 40),
         ),
       );
@@ -117,7 +127,9 @@ class _DrillDetailScreenState extends State<DrillDetailScreen> {
         icon: const Icon(Icons.pause),
         label: const Text('Pause Drill'),
         style: ElevatedButton.styleFrom(
+          // Amber is a good semantic color for "Pause", keep it
           backgroundColor: Colors.amber,
+          foregroundColor: Colors.black, // Text on amber
           padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 40),
         ),
       );
@@ -125,43 +137,54 @@ class _DrillDetailScreenState extends State<DrillDetailScreen> {
       return ElevatedButton.icon(
         onPressed: _currentTime == 0 ? _resetTimer : _startTimer,
         icon: Icon(_currentTime == 0 ? Icons.refresh : Icons.play_arrow),
-        label: Text(_currentTime == 0 ? 'Restart Timer' : (_currentTime == initialTimeSeconds ? 'Start Training' : 'Resume')),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.green,
-          padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 40),
-        ),
+        label: Text(_currentTime == 0
+            ? 'Restart Timer'
+            : (_currentTime == initialTimeSeconds ? 'Start Training' : 'Resume')),
+        // 3. UI Theme: REMOVED style, so it uses the main.dart theme (Cyan)
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // 4. UI Theme: Get theme from context
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text(drillName),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
+        // 5. UI Theme: Removed colors, uses main.dart theme
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // --- 1. Video Tutorial Area ---
+            // --- 6. UI Theme: Video Tutorial Area ---
             Container(
               height: 200,
               decoration: BoxDecoration(
-                color: Colors.blueGrey[100],
+                // Use theme surface color
+                color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.blueGrey.shade300),
+                // Use a subtle border
+                border: Border.all(
+                    color: theme.colorScheme.onSurface.withOpacity(0.2)),
               ),
-              child: const Center(
+              child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.ondemand_video, size: 50, color: Colors.blueGrey),
-                    SizedBox(height: 8),
-                    Text('Video Tutorial Placeholder', style: TextStyle(color: Colors.blueGrey)),
+                    Icon(Icons.ondemand_video,
+                        size: 50,
+                        // Use a light, secondary icon color
+                        color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                    const SizedBox(height: 8),
+                    Text('Video Tutorial Placeholder',
+                        // Use a light, secondary text color
+                        style: TextStyle(
+                            color:
+                                theme.colorScheme.onSurface.withOpacity(0.5))),
                   ],
                 ),
               ),
@@ -170,29 +193,36 @@ class _DrillDetailScreenState extends State<DrillDetailScreen> {
             // --- Drill Instructions ---
             Text(
               'Goal:',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green[800]),
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  // 7. UI Theme: Use primary cyan color
+                  color: theme.colorScheme.primary),
             ),
             const SizedBox(height: 5),
             Text(
               drillGoal,
+              // 8. UI Theme: Text will default to theme.onSurface (white)
               style: const TextStyle(fontSize: 16),
             ),
             const SizedBox(height: 30),
-            // --- 2. Timer/Counter Display ---
+            // --- 9. UI Theme: Timer/Counter Display ---
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white,
+                // Use theme surface color
+                color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 5)),
-                ],
+                // Removed shadow
               ),
               child: Column(
                 children: [
-                  const Text(
+                  Text(
                     'Time Remaining',
-                    style: TextStyle(fontSize: 20, color: Colors.grey),
+                    // Use light, secondary text color
+                    style: TextStyle(
+                        fontSize: 20,
+                        color: theme.colorScheme.onSurface.withOpacity(0.7)),
                   ),
                   const SizedBox(height: 10),
                   Text(
@@ -200,26 +230,33 @@ class _DrillDetailScreenState extends State<DrillDetailScreen> {
                     style: TextStyle(
                       fontSize: 72,
                       fontWeight: FontWeight.w900,
-                      color: _currentTime < 10 && _currentTime > 0 ? Colors.red : Theme.of(context).primaryColor,
+                      // 10. UI Theme: This logic is perfect.
+                      // It uses Red for urgency, and our (now Cyan) primaryColor
+                      color: _currentTime < 10 && _currentTime > 0
+                          ? Colors.red
+                          : theme.colorScheme.primary,
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 40),
-            // --- 3. Action Buttons ---
+            // --- Action Buttons ---
             Center(child: _buildActionButton()),
             const SizedBox(height: 20),
             if (!_isRunning && !_isCompleted)
+              // 11. UI Theme: "Mark as Done" Button ---
               OutlinedButton.icon(
                 onPressed: _markAsDone,
                 icon: const Icon(Icons.check_circle_outline),
                 label: const Text('I Finished! Mark as Done'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.green,
-                  side: const BorderSide(color: Colors.green, width: 2),
+                  // Semantic color (green) is good, keep it
+                  foregroundColor: Colors.green[400],
+                  side: BorderSide(color: Colors.green[400]!, width: 2),
                   padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16)),
                 ),
               ),
           ],

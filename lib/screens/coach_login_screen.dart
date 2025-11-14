@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 
-class ParentLoginScreen extends StatefulWidget {
-  const ParentLoginScreen({super.key});
+// 1. Class name refactored: ParentLoginScreen -> CoachLoginScreen
+class CoachLoginScreen extends StatefulWidget {
+  const CoachLoginScreen({super.key});
 
   @override
-  State<ParentLoginScreen> createState() => _ParentLoginScreenState();
+  State<CoachLoginScreen> createState() => _CoachLoginScreenState();
 }
 
-class _ParentLoginScreenState extends State<ParentLoginScreen> {
+class _CoachLoginScreenState extends State<CoachLoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
 
-  void _handleParentLogin() {
+  // 2. Function name refactored: _handleParentLogin -> _handleCoachLogin
+  void _handleCoachLogin() {
     // 1. Check Form Validation
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -28,10 +30,10 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> {
         setState(() {
           _isLoading = false;
         });
-        
+
         // 2. Navigation
-        // Ensure the route name exactly matches the one in main.dart: /coach-home
-        Navigator.of(context).pushReplacementNamed('/coach-home'); 
+        // This route name '/coach-home' already matches our main.dart
+        Navigator.of(context).pushReplacementNamed('/coach-home');
         debugPrint('Navigation to /coach-home successful.');
       });
     } else {
@@ -48,11 +50,14 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 3. UI Theme: Use theme colors for a consistent look
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
+        // 4. Text refactored: 'Coach Access' (already correct)
         title: const Text('Coach Access'),
-        backgroundColor: Theme.of(context).primaryColor,
-        foregroundColor: Colors.white,
+        // AppBar color is now controlled by main.dart theme
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -62,26 +67,38 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(Icons.family_restroom, size: 60, color: Theme.of(context).primaryColor),
+                // 5. UI Theme: Icon updated to be a "coach" icon and use cyan color
+                Icon(Icons.sports,
+                    size: 60, color: theme.colorScheme.primary),
                 const SizedBox(height: 20),
+                // 6. Text refactored: Updated descriptive text
                 Text(
-                  'Monitor progress and manage settings.',
+                  'Monitor athlete progress and manage training.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                  // 7. UI Theme: Explicitly use theme text color for light grey
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
                 ),
                 const SizedBox(height: 40),
 
-                // Email Input with Validation
+                // 8. UI Theme: Styled TextFormField for dark mode
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Email Address',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
-                    prefixIcon: Icon(Icons.email),
+                    // Use theme's border color
+                    border: const OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                    ),
+                    prefixIcon:
+                        Icon(Icons.email, color: theme.colorScheme.primary),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty || !value.contains('@')) {
+                    if (value == null ||
+                        value.isEmpty ||
+                        !value.contains('@')) {
                       return 'Please enter a valid email address';
                     }
                     return null;
@@ -89,14 +106,17 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // Password Input with Validation
+                // 9. UI Theme: Styled TextFormField for dark mode
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Password',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
-                    prefixIcon: Icon(Icons.lock),
+                    border: const OutlineInputBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(12)),
+                    ),
+                    prefixIcon:
+                        Icon(Icons.lock, color: theme.colorScheme.primary),
                   ),
                   validator: (value) {
                     if (value == null || value.length < 6) {
@@ -107,19 +127,18 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> {
                 ),
                 const SizedBox(height: 30),
 
-                // Login Button (with Loading State)
+                // 10. Login Button (with Loading State)
                 ElevatedButton(
-                  onPressed: _isLoading ? null : _handleParentLogin,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    backgroundColor: Colors.green, // Strong action button color
-                  ),
+                  // 11. Function refactored: _handleCoachLogin
+                  onPressed: _isLoading ? null : _handleCoachLogin,
+                  // Button style is now controlled by main.dart theme
                   child: _isLoading
                       ? const SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
-                            color: Colors.white,
+                            // 12. UI Theme: Use black for spinner on cyan button
+                            color: Colors.black,
                             strokeWidth: 3,
                           ),
                         )
@@ -129,15 +148,15 @@ class _ParentLoginScreenState extends State<ParentLoginScreen> {
                         ),
                 ),
                 const SizedBox(height: 20),
-                
-                // Option for Child Join Code
+
+                // 13. Text refactored: "Child Join Code" -> "Athlete Join Code"
                 TextButton(
                   onPressed: _isLoading ? null : () {
-                    // This will open the feature for parents to link to a child account (future feature)
+                    // This will open the feature for coaches to link to an athlete account
                   },
-                  child: Text(
-                    'Have a User Join Code?',
-                    style: TextStyle(color: Theme.of(context).primaryColor),
+                  child: const Text(
+                    'Have an Athlete Join Code?',
+                    // TextButton color is now controlled by main.dart theme
                   ),
                 ),
               ],

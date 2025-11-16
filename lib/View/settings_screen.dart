@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
+// ⭐️ ADD FIREBASE IMPORT ⭐️
+import 'package:firebase_auth/firebase_auth.dart';
 
+// ⭐️ 1. CONSTRUCTOR UPDATED ⭐️
 class SettingsScreen extends StatelessWidget {
-  const SettingsScreen({super.key});
+  final Map<String, dynamic> athleteData;
+  const SettingsScreen({super.key, required this.athleteData});
 
   // Helper function to show a confirmation dialog for logout
   void _showLogoutConfirmDialog(BuildContext context) {
-    // 1. UI Theme: Get theme from context
     final theme = Theme.of(context);
 
     showDialog(
       context: context,
       builder: (BuildContext ctx) {
         return AlertDialog(
-          // 2. UI Theme: Apply theme colors to dialog
           backgroundColor: theme.colorScheme.surface,
           title: Text('Confirm Logout',
               style: TextStyle(color: theme.colorScheme.onSurface)),
@@ -20,19 +22,24 @@ class SettingsScreen extends StatelessWidget {
               style: TextStyle(color: theme.colorScheme.onSurface)),
           actions: [
             TextButton(
-              child: const Text('Cancel'), // Will use theme's default color
+              child: const Text('Cancel'),
               onPressed: () {
                 Navigator.of(ctx).pop(); // Close the dialog
               },
             ),
             ElevatedButton(
-              // 3. UI Theme: Semantic color (red) is good, keep it
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              onPressed: () {
-                Navigator.of(ctx).pop(); // Close the dialog
-                // This navigation is correct for the athlete
-                Navigator.of(context)
-                    .pushNamedAndRemoveUntil('/login', (route) => false);
+              // ⭐️ 2. MAKE FUNCTION ASYNC AND ADD SIGN OUT ⭐️
+              onPressed: () async {
+                // ⭐️ THIS IS THE REAL LOGOUT COMMAND ⭐️
+                await FirebaseAuth.instance.signOut();
+
+                if (context.mounted) {
+                  Navigator.of(ctx).pop(); // Close the dialog
+                  // This navigation is correct for the athlete
+                  Navigator.of(context)
+                      .pushNamedAndRemoveUntil('/login', (route) => false);
+                }
               },
               child: const Text('Logout'),
             ),
@@ -50,14 +57,11 @@ class SettingsScreen extends StatelessWidget {
     VoidCallback? onTap,
     Widget? trailing,
   }) {
-    // 4. UI Theme: Get theme from context
     final theme = Theme.of(context);
     return ListTile(
-      // 5. UI Theme: Icon already uses primary color (cyan), which is perfect
       leading: Icon(icon, color: theme.colorScheme.primary),
       title: Text(title,
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-      // 6. UI Theme: Update trailing icon color
       trailing: trailing ??
           Icon(Icons.chevron_right,
               color: theme.colorScheme.onSurface.withOpacity(0.5)),
@@ -67,20 +71,17 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 7. UI Theme: Get theme from context
     final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
-        // 8. UI Theme: Removed colors, uses main.dart theme
       ),
       body: ListView(
         children: [
           // --- Account Section ---
           Padding(
             padding: const EdgeInsets.fromLTRB(16.0, 20.0, 16.0, 8.0),
-            // 9. UI Theme: Use primary cyan for section headers
             child: Text('Account',
                 style: TextStyle(
                     fontSize: 14,
@@ -88,13 +89,11 @@ class SettingsScreen extends StatelessWidget {
                     color: theme.colorScheme.primary)),
           ),
           Card(
-            // 10. UI Theme: Card style comes from main.dart
             margin: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Column(
               children: [
                 _buildSettingsTile(
                   context: context,
-                  // 11. Text refactored: 'User' -> 'Athlete'
                   title: 'Edit Athlete Name',
                   icon: Icons.person,
                   onTap: () {
@@ -117,7 +116,6 @@ class SettingsScreen extends StatelessWidget {
           // --- Preferences Section ---
           Padding(
             padding: const EdgeInsets.fromLTRB(16.0, 20.0, 16.0, 8.0),
-            // 12. UI Theme: Use primary cyan for section headers
             child: Text('Preferences',
                 style: TextStyle(
                     fontSize: 14,
@@ -134,7 +132,6 @@ class SettingsScreen extends StatelessWidget {
                   icon: Icons.volume_up,
                   trailing: Switch(
                     value: true, // Mock value
-                    // 13. UI Theme: Switch will use primary color
                     onChanged: (bool val) {
                       // Placeholder: Update sound preference
                     },
@@ -159,7 +156,6 @@ class SettingsScreen extends StatelessWidget {
           // --- Support Section ---
           Padding(
             padding: const EdgeInsets.fromLTRB(16.0, 20.0, 16.0, 8.0),
-            // 14. UI Theme: Use primary cyan for section headers
             child: Text('Support',
                 style: TextStyle(
                     fontSize: 14,
@@ -180,7 +176,6 @@ class SettingsScreen extends StatelessWidget {
                 _buildSettingsTile(
                   context: context,
                   title: 'Contact CoachFitness Support',
-                  // 15. Icon refactored: 'family' -> 'support'
                   icon: Icons.support_agent,
                   onTap: () {},
                 ),
@@ -196,7 +191,6 @@ class SettingsScreen extends StatelessWidget {
               onPressed: () {
                 _showLogoutConfirmDialog(context);
               },
-              // 16. UI Theme: Semantic color (red) is good, keep it
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red[600],
                 padding: const EdgeInsets.symmetric(vertical: 15),

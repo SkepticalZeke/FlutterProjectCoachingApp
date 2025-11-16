@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+// ⭐️ ADD FIREBASE IMPORT ⭐️
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-// 1. Class name refactored: LoginSignupScreen -> AthleteLoginSignupScreen
 class AthleteLoginSignupScreen extends StatefulWidget {
   const AthleteLoginSignupScreen({super.key});
 
@@ -9,37 +10,83 @@ class AthleteLoginSignupScreen extends StatefulWidget {
       _AthleteLoginSignupScreenState();
 }
 
-// 2. State class refactored
 class _AthleteLoginSignupScreenState extends State<AthleteLoginSignupScreen> {
-  // 3. Variable refactored: _playerNameController -> _athleteNameController
   final TextEditingController _athleteNameController = TextEditingController();
   final TextEditingController _pinController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  bool _isLoading = false; // ⭐️ To control loading spinner
 
-  void _handleStartTraining(BuildContext context) {
-    if (_formKey.currentState!.validate()) {
-      // 4. Variable refactored: playerName -> athleteName
-      final athleteName = _athleteNameController.text.trim();
-      final pin = _pinController.text.trim();
+  // ⭐️ GET FIREBASE INSTANCE ⭐️
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-      // --- Firebase Placeholder ---
-      debugPrint('Attempting login for $athleteName with PIN $pin');
+  // ⭐️ UPDATED LOGIN FUNCTION ⭐️
+  void _handleStartTraining(BuildContext context) async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
-      // Simulate network delay and assumed success
-      Future.delayed(const Duration(seconds: 1), () {
-        // 5. Navigation refactored: '/child-home' -> '/athlete-home'
-        Navigator.of(context).pushReplacementNamed(
-          '/athlete-home',
-          // 6. Arguments refactored: Pass athleteName
-          arguments: athleteName,
-        );
+    setState(() {
+      _isLoading = true;
+    });
+
+    final athleteName = _athleteNameController.text.trim();
+    final pin = _pinController.text.trim();
+
+    try {
+      // 1. Query Firestore for an athlete with matching name AND pin
+      final QuerySnapshot snapshot = await _firestore
+          .collection('athletes')
+          .where('name', isEqualTo: athleteName)
+          .where('pin', isEqualTo: pin)
+          .limit(1) // We only expect one match
+          .get();
+
+      // 2. Check if we found a match
+      if (snapshot.docs.isNotEmpty) {
+        // 3. Match found! Get the athlete's data
+        final athleteDoc = snapshot.docs.first;
+        final athleteData = athleteDoc.data() as Map<String, dynamic>;
+
+        // ⭐️ IMPORTANT: Add the document ID to the data map ⭐️
+        // This is crucial for the dashboard to know which document to update
+        athleteData['id'] = athleteDoc.id;
+
+        // 4. Navigate to the athlete's home, passing the entire data map
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed(
+            '/athlete-home',
+            arguments:
+                athleteData, // ⭐️ Pass the full map, not just the name
+          );
+        }
+      } else {
+        // 5. No match found
+        _showErrorSnackBar('Invalid name or PIN. Please try again.');
+      }
+    } catch (e) {
+      // 6. Handle any other errors
+      _showErrorSnackBar('An error occurred: $e');
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
       });
     }
   }
 
+  // ⭐️ HELPER FUNCTION FOR ERRORS ⭐️
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
   @override
   void dispose() {
-    // 7. Dispose refactored controller
     _athleteNameController.dispose();
     _pinController.dispose();
     super.dispose();
@@ -47,11 +94,9 @@ class _AthleteLoginSignupScreenState extends State<AthleteLoginSignupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 8. UI Theme: Get theme from context
     final theme = Theme.of(context);
 
     return Scaffold(
-      // 9. Text refactored: More specific title
       appBar: AppBar(title: const Text('Athlete Login')),
       body: Center(
         child: SingleChildScrollView(
@@ -62,36 +107,29 @@ class _AthleteLoginSignupScreenState extends State<AthleteLoginSignupScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 10. UI Theme: Use primary cyan color
                 Icon(Icons.person_pin,
                     size: 80, color: theme.colorScheme.primary),
                 const SizedBox(height: 10),
-                // 11. Text refactored: 'User' -> 'Athlete'
                 Text(
                   'Welcome Back, Athlete!',
-                  // 12. UI Theme: Use theme text styles
                   style: theme.textTheme.headlineMedium
                       ?.copyWith(fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 30),
 
-                // 13. Athlete Name Input
+                // Athlete Name Input
                 TextFormField(
-                  // 14. Controller refactored
                   controller: _athleteNameController,
                   decoration: InputDecoration(
-                    // 15. Text refactored
                     labelText: 'Athlete Name / Nickname',
                     border: const OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(12))),
-                    // 16. UI Theme: Use primary cyan color
                     prefixIcon:
                         Icon(Icons.person, color: theme.colorScheme.primary),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      // 17. Text refactored
                       return 'Please enter your Athlete Name';
                     }
                     return null;
@@ -110,7 +148,6 @@ class _AthleteLoginSignupScreenState extends State<AthleteLoginSignupScreen> {
                     counterText: '',
                     border: const OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(12))),
-                    // 18. UI Theme: Use primary cyan color
                     prefixIcon:
                         Icon(Icons.lock, color: theme.colorScheme.primary),
                   ),
@@ -127,51 +164,52 @@ class _AthleteLoginSignupScreenState extends State<AthleteLoginSignupScreen> {
 
                 // Main Login Button
                 ElevatedButton(
-                  onPressed: () => _handleStartTraining(context),
-                  // 19. UI Theme: Removed style, now uses main.dart theme
-                  child: const Text(
-                    'Start Training',
-                    style: TextStyle(fontSize: 18),
-                  ),
+                  // ⭐️ Wire up loading state ⭐️
+                  onPressed: _isLoading ? null : () => _handleStartTraining(context),
+                  child: _isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.black, strokeWidth: 3),
+                        )
+                      : const Text(
+                          'Start Training',
+                          style: TextStyle(fontSize: 18),
+                        ),
                 ),
                 const SizedBox(height: 20),
 
                 // Forgot Name/PIN
                 TextButton(
-                  onPressed: () {
+                  onPressed: _isLoading ? null : () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      // 20. Text refactored: This message is perfect
                       const SnackBar(
                           content: Text(
                               'Contact your coach to recover your name or PIN.')),
                     );
                   },
-                  // 21. UI Theme: Removed style, uses theme default
                   child: const Text('Forgot Name or PIN?'),
                 ),
 
                 // --- Coach Sign Up ---
                 OutlinedButton(
-                  onPressed: () {
-                    // 22. Navigation: This route is correct
+                  onPressed: _isLoading ? null : () {
                     Navigator.of(context).pushNamed('/coach-registration');
                   },
-                  // 23. UI Theme: Style outline button for dark mode
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     side: BorderSide(
                         color: theme.colorScheme.primary.withOpacity(0.7)),
                     foregroundColor: theme.colorScheme.primary,
                   ),
-                  // 24. Text refactored: 'User' -> 'Coach'
                   child: const Text('New Coach? Sign Up Here'),
                 ),
                 const SizedBox(height: 30),
 
                 // --- Coach Access Login ---
                 TextButton(
-                  onPressed: () {
-                    // 25. Navigation: This route is correct
+                  onPressed: _isLoading ? null : () {
                     Navigator.of(context).pushNamed('/coach-login');
                   },
                   child: const Text('Already a Coach? Log In'),

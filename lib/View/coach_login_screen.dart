@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+// ⭐️ ADD FIREBASE IMPORT ⭐️
+import 'package:firebase_auth/firebase_auth.dart';
 
-// 1. Class name refactored: ParentLoginScreen -> CoachLoginScreen
 class CoachLoginScreen extends StatefulWidget {
   const CoachLoginScreen({super.key});
 
@@ -14,31 +15,62 @@ class _CoachLoginScreenState extends State<CoachLoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
 
-  // 2. Function name refactored: _handleParentLogin -> _handleCoachLogin
-  void _handleCoachLogin() {
+  // ⭐️ GET FIREBASE INSTANCE ⭐️
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // ⭐️ UPDATED LOGIN FUNCTION ⭐️
+  void _handleCoachLogin() async {
     // 1. Check Form Validation
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isLoading = true;
       });
 
-      // --- Firebase Placeholder ---
-      debugPrint('Validation Succeeded. Starting simulated login...');
+      try {
+        // 2. SIGN IN WITH FIREBASE AUTH
+        await _auth.signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
 
-      // Simulate network delay
-      Future.delayed(const Duration(seconds: 2), () {
+        // 3. Navigation (if successful)
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/coach-home');
+          debugPrint('Navigation to /coach-home successful.');
+        }
+      } on FirebaseAuthException catch (e) {
+        // 4. HANDLE LOGIN ERRORS
+        String message = 'An error occurred. Please try again.';
+        // Use 'invalid-credential' as a generic catch-all for wrong email/pass
+        if (e.code == 'invalid-credential' ||
+            e.code == 'user-not-found' ||
+            e.code == 'wrong-password') {
+          message = 'Invalid email or password.';
+        } else if (e.code == 'invalid-email') {
+          message = 'The email address is not valid.';
+        }
+        _showErrorSnackBar(message);
+      } catch (e) {
+        _showErrorSnackBar(e.toString());
+      }
+
+      // 5. STOP LOADING (if mounted)
+      if (mounted) {
         setState(() {
           _isLoading = false;
         });
-
-        // 2. Navigation
-        // This route name '/coach-home' already matches our main.dart
-        Navigator.of(context).pushReplacementNamed('/coach-home');
-        debugPrint('Navigation to /coach-home successful.');
-      });
-    } else {
-      debugPrint('Validation Failed. Not navigating.');
+      }
     }
+  }
+
+  // ⭐️ HELPER FUNCTION FOR ERRORS ⭐️
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   @override
@@ -50,14 +82,13 @@ class _CoachLoginScreenState extends State<CoachLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 3. UI Theme: Use theme colors for a consistent look
+    // --- The build() method (UI) is unchanged ---
+    // It is already themed and wired up correctly
     final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        // 4. Text refactored: 'Coach Access' (already correct)
         title: const Text('Coach Access'),
-        // AppBar color is now controlled by main.dart theme
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -67,28 +98,24 @@ class _CoachLoginScreenState extends State<CoachLoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 5. UI Theme: Icon updated to be a "coach" icon and use cyan color
                 Icon(Icons.sports,
                     size: 60, color: theme.colorScheme.primary),
                 const SizedBox(height: 20),
-                // 6. Text refactored: Updated descriptive text
                 Text(
                   'Monitor athlete progress and manage training.',
                   textAlign: TextAlign.center,
-                  // 7. UI Theme: Explicitly use theme text color for light grey
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: theme.colorScheme.onSurface.withOpacity(0.7),
                   ),
                 ),
                 const SizedBox(height: 40),
 
-                // 8. UI Theme: Styled TextFormField for dark mode
+                // Email Input
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
                     labelText: 'Email Address',
-                    // Use theme's border color
                     border: const OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(12)),
                     ),
@@ -106,7 +133,7 @@ class _CoachLoginScreenState extends State<CoachLoginScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // 9. UI Theme: Styled TextFormField for dark mode
+                // Password Input
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
@@ -127,17 +154,14 @@ class _CoachLoginScreenState extends State<CoachLoginScreen> {
                 ),
                 const SizedBox(height: 30),
 
-                // 10. Login Button (with Loading State)
+                // Login Button
                 ElevatedButton(
-                  // 11. Function refactored: _handleCoachLogin
                   onPressed: _isLoading ? null : _handleCoachLogin,
-                  // Button style is now controlled by main.dart theme
                   child: _isLoading
                       ? const SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
-                            // 12. UI Theme: Use black for spinner on cyan button
                             color: Colors.black,
                             strokeWidth: 3,
                           ),
@@ -149,14 +173,13 @@ class _CoachLoginScreenState extends State<CoachLoginScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // 13. Text refactored: "Child Join Code" -> "Athlete Join Code"
+                // Athlete Join Code
                 TextButton(
                   onPressed: _isLoading ? null : () {
-                    // This will open the feature for coaches to link to an athlete account
+                    // ...
                   },
                   child: const Text(
                     'Have an Athlete Join Code?',
-                    // TextButton color is now controlled by main.dart theme
                   ),
                 ),
               ],

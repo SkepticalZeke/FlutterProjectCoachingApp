@@ -1,25 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'Model/firebase_options.dart'; // Using your Model/ folder path
+import 'firebase_options.dart'; // ⭐️ MOVED TO lib/ ⭐️
 
-// --- Screen Imports Updated to 'View' folder ---
-import 'View/splash_screen.dart';
-import 'View/athlete_login_signup_screen.dart';
-import 'View/athlete_dashboard_screen.dart';
-import 'View/coach_login_screen.dart';
-import 'View/training_screen.dart';
-import 'View/avatar_screen.dart';
-import 'View/rewards_screen.dart';
-import 'View/progress_screen.dart';
-import 'View/settings_screen.dart';
-import 'View/coach_dashboard_screen.dart';
-import 'View/coach_athlete_detail_screen.dart';
-import 'View/coach_registration_screen.dart';
-import 'View/coach_notifications_screen.dart';
-import 'View/drill_detail_screen.dart';
-import 'View/create_drill_screen.dart';
-import 'View/assign_drill_screen.dart'; 
-import 'View/review_submission_screen.dart';
+// --- Screen Imports Updated to new MVVM structure ---
+import 'src/features/0_auth/view/splash_view.dart';
+import 'src/features/0_auth/view/athlete_login_view.dart';
+import 'src/features/2_athlete_flow/view/athlete_dashboard_view.dart';
+import 'src/features/0_auth/view/coach_login_view.dart';
+import 'src/features/2_athlete_flow/view/training_view.dart';
+import 'src/features/2_athlete_flow/view/avatar_view.dart';
+import 'src/features/2_athlete_flow/view/rewards_view.dart';
+import 'src/features/2_athlete_flow/view/progress_view.dart';
+import 'src/features/2_athlete_flow/view/settings_view.dart';
+import 'src/features/1_coach_flow/view/coach_dashboard_view.dart';
+import 'src/features/1_coach_flow/view/coach_athlete_detail_view.dart';
+import 'src/features/0_auth/view/coach_registration_view.dart';
+import 'src/features/1_coach_flow/view/coach_notifications_view.dart';
+import 'src/features/2_athlete_flow/view/drill_detail_view.dart';
+import 'src/features/1_coach_flow/view/create_drill_view.dart';
+import 'src/features/1_coach_flow/view/assign_drill_view.dart';
+import 'src/features/1_coach_flow/view/review_submission_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -81,7 +81,6 @@ class CoachFitnessApp extends StatelessWidget {
           ),
         ),
       ),
-      // Using CardTheme, not CardThemeData (modern syntax)
       cardTheme: CardThemeData(
         color: darkSurface,
         elevation: 2,
@@ -105,20 +104,20 @@ class CoachFitnessApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: darkTheme,
       darkTheme: darkTheme,
-      themeMode: ThemeMode.dark,
+      themeMode: ThemeMode.dark, // Force dark mode
       initialRoute: '/',
       // --- Routes ---
       routes: {
-        // General Flow
-        '/': (context) => const SplashScreen(),
-        '/login': (context) => const AthleteLoginSignupScreen(),
+        // General Flow (from 0_auth)
+        '/': (context) => const SplashView(),
+        '/login': (context) => const AthleteLoginView(),
 
-        // Coach Flow
-        '/coach-login': (context) => const CoachLoginScreen(),
-        '/coach-home': (context) => const CoachDashboardScreen(),
-        '/coach-registration': (context) => const CoachRegistrationScreen(),
-        '/coach-notifications': (context) => const CoachNotificationsScreen(),
-        '/create-drill': (context) => const CreateDrillScreen(),
+        // Coach Flow (from 0_auth and 1_coach_flow)
+        '/coach-login': (context) => const CoachLoginView(),
+        '/coach-home': (context) => const CoachDashboardView(),
+        '/coach-registration': (context) => const CoachRegistrationView(),
+        '/coach-notifications': (context) => const CoachNotificationsView(),
+        '/create-drill': (context) => const CreateDrillView(),
       },
       // --- onGenerateRoute for passing arguments ---
       onGenerateRoute: (settings) {
@@ -127,7 +126,7 @@ class CoachFitnessApp extends StatelessWidget {
           final args = settings.arguments as Map<String, dynamic>;
           return MaterialPageRoute(
             builder: (context) {
-              return CoachAthleteDetailScreen(athleteData: args);
+              return CoachAthleteDetailView(athleteData: args);
             },
           );
         }
@@ -136,7 +135,7 @@ class CoachFitnessApp extends StatelessWidget {
           final athleteData = settings.arguments as Map<String, dynamic>;
           return MaterialPageRoute(
             builder: (context) {
-              return AthleteDashboardScreen(athleteData: athleteData);
+              return AthleteDashboardView(athleteData: athleteData);
             },
           );
         }
@@ -145,17 +144,23 @@ class CoachFitnessApp extends StatelessWidget {
           final routeArgs = settings.arguments as Map<String, dynamic>;
           return MaterialPageRoute(
             builder: (context) {
-              return DrillDetailScreen(routeArgs: routeArgs);
+              return DrillDetailView(routeArgs: routeArgs);
             },
           );
         }
-        
-        // ⭐️ ADDED THIS ROUTE ⭐️
         // Assign Drill Screen
         if (settings.name == '/assign-drill') {
           final athleteData = settings.arguments as Map<String, dynamic>;
           return MaterialPageRoute(
-            builder: (context) => AssignDrillScreen(athleteData: athleteData),
+            builder: (context) => AssignDrillView(athleteData: athleteData),
+          );
+        }
+        // Review Submission Screen
+        if (settings.name == '/review-submission') {
+          final routeArgs = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) =>
+                ReviewSubmissionView(routeArgs: routeArgs),
           );
         }
 
@@ -165,34 +170,31 @@ class CoachFitnessApp extends StatelessWidget {
         if (settings.name == '/training') {
           return MaterialPageRoute(
             builder: (context) =>
-                const TrainingScreen(), // Note: TrainingScreen doesn't need data yet
+                TrainingView(athleteData: athleteData),
           );
         }
         if (settings.name == '/avatar') {
           return MaterialPageRoute(
-            builder: (context) => AvatarScreen(athleteData: athleteData),
+            builder: (context) =>
+                AvatarView(athleteData: athleteData),
           );
         }
         if (settings.name == '/rewards') {
           return MaterialPageRoute(
-            builder: (context) => RewardsScreen(athleteData: athleteData),
+            builder: (context) =>
+                RewardsView(athleteData: athleteData),
           );
         }
         if (settings.name == '/progress') {
           return MaterialPageRoute(
-            builder: (context) => ProgressScreen(athleteData: athleteData),
+            builder: (context) =>
+                ProgressView(athleteData: athleteData),
           );
         }
         if (settings.name == '/settings') {
           return MaterialPageRoute(
-            builder: (context) => SettingsScreen(athleteData: athleteData),
-          );
-        }
-        if (settings.name == '/review-submission') {
-          final routeArgs = settings.arguments as Map<String, dynamic>;
-          return MaterialPageRoute(
             builder: (context) =>
-                ReviewSubmissionScreen(routeArgs: routeArgs),
+                SettingsView(athleteData: athleteData),
           );
         }
 

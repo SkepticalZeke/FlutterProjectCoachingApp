@@ -53,8 +53,6 @@ class _AthleteDashboardViewState extends State<AthleteDashboardView> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('CoachFitness Training'),
@@ -162,7 +160,7 @@ class _AthleteDashboardViewState extends State<AthleteDashboardView> {
                 'Training Streak:',
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withValues(alpha: 0.9),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -226,7 +224,7 @@ class _AthleteDashboardViewState extends State<AthleteDashboardView> {
                     Text(
                       'Focus: $skillFocus',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -235,7 +233,7 @@ class _AthleteDashboardViewState extends State<AthleteDashboardView> {
                 Padding(
                   padding: const EdgeInsets.only(right: 15.0),
                   child: Icon(Icons.chevron_right,
-                      color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
                 ),
               ],
             ),
@@ -333,7 +331,7 @@ class _AthleteDashboardViewState extends State<AthleteDashboardView> {
                         decoration:
                             isCompleted ? TextDecoration.lineThrough : null,
                         color: isCompleted
-                            ? theme.colorScheme.onSurface.withOpacity(0.5)
+                            ? theme.colorScheme.onSurface.withValues(alpha: 0.5)
                             : theme.colorScheme.onSurface,
                         fontWeight: FontWeight.w600,
                       ),
@@ -385,7 +383,7 @@ class _AthleteDashboardViewState extends State<AthleteDashboardView> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.15),
+            color: color.withValues(alpha: 0.15),
             shape: BoxShape.circle,
             border: Border.all(color: color, width: 2),
           ),
@@ -398,7 +396,7 @@ class _AthleteDashboardViewState extends State<AthleteDashboardView> {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.9),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.9),
           ),
         ),
       ],

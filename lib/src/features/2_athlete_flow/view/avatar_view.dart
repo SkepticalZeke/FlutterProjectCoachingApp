@@ -174,7 +174,7 @@ class _AvatarViewState extends State<AvatarView>
                 controller: _tabController,
                 labelColor: theme.colorScheme.primary,
                 unselectedLabelColor:
-                    theme.colorScheme.onSurface.withOpacity(0.7),
+                    theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 indicatorColor: theme.colorScheme.primary,
                 tabs: const [
                   Tab(icon: Icon(Icons.checkroom), text: 'Outfits'),
@@ -209,7 +209,7 @@ class _AvatarViewState extends State<AvatarView>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color, width: 1.5),
       ),
@@ -258,14 +258,14 @@ class _AvatarViewState extends State<AvatarView>
             decoration: BoxDecoration(
               color: isUnlocked
                   ? theme.colorScheme.surface
-                  : theme.colorScheme.surface.withOpacity(0.5),
+                  : theme.colorScheme.surface.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isSelected
                     ? theme.colorScheme.primary
                     : (isUnlocked
-                        ? theme.colorScheme.onSurface.withOpacity(0.2)
-                        : theme.colorScheme.onSurface.withOpacity(0.4)),
+                        ? theme.colorScheme.onSurface.withValues(alpha: 0.2)
+                        : theme.colorScheme.onSurface.withValues(alpha: 0.4)),
                 width: isSelected ? 4 : 1,
               ),
             ),
@@ -285,7 +285,7 @@ class _AvatarViewState extends State<AvatarView>
                       fontSize: 14,
                       color: isUnlocked
                           ? theme.colorScheme.onSurface
-                          : theme.colorScheme.onSurface.withOpacity(0.5),
+                          : theme.colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ),
                   const SizedBox(height: 5),

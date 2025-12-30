@@ -95,7 +95,7 @@ class _CreateDrillViewState extends State<CreateDrillView> {
                   color: theme.colorScheme.surface,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                      color: theme.colorScheme.onSurface.withOpacity(0.2)),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.2)),
                 ),
                 child: _viewModel.videoController != null &&
                         _viewModel.videoController!.value.isInitialized

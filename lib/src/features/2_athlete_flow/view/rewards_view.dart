@@ -104,7 +104,7 @@ class _RewardsViewState extends State<RewardsView> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
               ],
@@ -141,13 +141,13 @@ class AchievementBadge extends StatelessWidget {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isUnlocked ? color.withOpacity(0.7) : Colors.grey[800]!,
+          color: isUnlocked ? color.withValues(alpha: 0.7) : Colors.grey[800]!,
           width: 2,
         ),
         boxShadow: isUnlocked
             ? [
                 BoxShadow(
-                  color: color.withOpacity(0.2),
+                  color: color.withValues(alpha: 0.2),
                   blurRadius: 8,
                   offset: const Offset(0, 4),
                 )

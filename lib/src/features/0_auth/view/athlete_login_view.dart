@@ -179,7 +179,7 @@ class _AthleteLoginViewState extends State<AthleteLoginView> {
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     side: BorderSide(
-                        color: theme.colorScheme.primary.withOpacity(0.7)),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.7)),
                     foregroundColor: theme.colorScheme.primary,
                   ),
                   child: const Text('New Coach? Sign Up Here'),

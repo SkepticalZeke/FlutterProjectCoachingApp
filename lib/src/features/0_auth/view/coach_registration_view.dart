@@ -138,7 +138,9 @@ class _CoachRegistrationViewState extends State<CoachRegistrationView> {
                   validator: (value) {
                     if (value == null ||
                         value.isEmpty ||
-                        !value.contains('@')) return 'Enter a valid email.';
+                        !value.contains('@')) {
+                      return 'Enter a valid email.';
+                    }
                     return null;
                   },
                 ),
@@ -154,8 +156,9 @@ class _CoachRegistrationViewState extends State<CoachRegistrationView> {
                         borderRadius: BorderRadius.all(Radius.circular(12))),
                   ),
                   validator: (value) {
-                    if (value == null || value.length < 6)
+                    if (value == null || value.length < 6) {
                       return 'Password must be at least 6 characters.';
+                    }
                     return null;
                   },
                 ),
@@ -180,8 +183,9 @@ class _CoachRegistrationViewState extends State<CoachRegistrationView> {
                         borderRadius: BorderRadius.all(Radius.circular(12))),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return 'Please enter a nickname for the athlete.';
+                    }
                     return null;
                   },
                 ),
@@ -202,8 +206,9 @@ class _CoachRegistrationViewState extends State<CoachRegistrationView> {
                   validator: (value) {
                     if (value == null ||
                         value.length != 4 ||
-                        int.tryParse(value) == null)
+                        int.tryParse(value) == null) {
                       return 'PIN must be 4 digits.';
+                    }
                     return null;
                   },
                 ),

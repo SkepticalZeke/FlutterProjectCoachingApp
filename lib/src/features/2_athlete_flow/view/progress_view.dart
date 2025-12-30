@@ -59,7 +59,7 @@ class _ProgressViewState extends State<ProgressView>
           controller: _tabController,
           indicatorColor: theme.colorScheme.primary,
           labelColor: theme.colorScheme.primary,
-          unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(0.7),
+          unselectedLabelColor: theme.colorScheme.onSurface.withValues(alpha: 0.7),
           tabs: const [
             Tab(icon: Icon(Icons.calendar_month), text: 'Calendar'),
             Tab(icon: Icon(Icons.show_chart), text: 'Skill Growth'),
@@ -130,11 +130,11 @@ class _ProgressViewState extends State<ProgressView>
                       defaultTextStyle:
                           TextStyle(color: theme.colorScheme.onSurface),
                       weekendTextStyle: TextStyle(
-                          color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
                       outsideTextStyle: TextStyle(
-                          color: theme.colorScheme.onSurface.withOpacity(0.3)),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
                       todayDecoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withOpacity(0.3),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.3),
                         shape: BoxShape.circle,
                       ),
                       selectedDecoration: BoxDecoration(
@@ -158,7 +158,7 @@ class _ProgressViewState extends State<ProgressView>
                           return Container(
                             margin: const EdgeInsets.all(4.0),
                             decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.5),
+                              color: Colors.green.withValues(alpha: 0.5),
                               shape: BoxShape.circle,
                             ),
                             child: Center(
@@ -177,7 +177,7 @@ class _ProgressViewState extends State<ProgressView>
                           return Container(
                             margin: const EdgeInsets.all(4.0),
                             decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.5),
+                              color: Colors.green.withValues(alpha: 0.5),
                               shape: BoxShape.circle,
                             ),
                             child: Center(
@@ -207,7 +207,7 @@ class _ProgressViewState extends State<ProgressView>
                 'Green circles mark completed training days!',
                 style: TextStyle(
                     fontSize: 16,
-                    color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
               ),
             ],
           ),
@@ -256,13 +256,13 @@ class _ProgressViewState extends State<ProgressView>
                         Icon(Icons.bar_chart,
                             size: 50,
                             color:
-                                theme.colorScheme.onSurface.withOpacity(0.5)),
+                                theme.colorScheme.onSurface.withValues(alpha: 0.5)),
                         const SizedBox(height: 10),
                         Text(
                           'XP Line Chart Placeholder',
                           style: TextStyle(
                               color:
-                                  theme.colorScheme.onSurface.withOpacity(0.5),
+                                  theme.colorScheme.onSurface.withValues(alpha: 0.5),
                               fontSize: 16),
                         ),
                       ],
@@ -342,7 +342,7 @@ class SkillProgressIndicator extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress / 100,
               minHeight: 10,
-              backgroundColor: theme.colorScheme.onSurface.withOpacity(0.1),
+              backgroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.1),
               valueColor: AlwaysStoppedAnimation<Color>(progressColor),
             ),
           ),

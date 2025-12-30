@@ -27,20 +27,22 @@ class _NewPlayerSignupScreenState extends State<NewPlayerSignupScreen> {
       
       debugPrint('Registering New Player: ${_nameController.text}');
 
-      Future.delayed(const Duration(seconds: 2), () {
-        setState(() {
-          _isLoading = false;
-        });
-        
-        // After successful registration, navigate directly to the child dashboard
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          '/child-home',
-          (Route<dynamic> route) => false, // Clears the stack
-          arguments: _nameController.text.trim(),
-        );
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration complete! Welcome to CoachFitness.')),
-        );
+      Future.delayed(const Duration(seconds: 2)).then((_) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+
+          // After successful registration, navigate directly to the child dashboard
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/child-home',
+            (Route<dynamic> route) => false, // Clears the stack
+            arguments: _nameController.text.trim(),
+          );
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Registration complete! Welcome to CoachFitness.')),
+          );
+        }
       });
     }
   }

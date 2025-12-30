@@ -65,13 +65,13 @@ class _AssignDrillViewState extends State<AssignDrillView> {
                 children: [
                   Icon(Icons.video_call_outlined,
                       size: 60,
-                      color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
                   const SizedBox(height: 10),
                   const Text('No custom drills found.'),
                   Text(
                     'Go back and create one first!',
                     style: TextStyle(
-                        color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
                   ),
                 ],
               ),

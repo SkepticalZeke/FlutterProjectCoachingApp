@@ -164,7 +164,7 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
           Text(title,
               style: TextStyle(
                   fontSize: 16,
-                  color: theme.colorScheme.onSurface.withOpacity(0.7))),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7))),
           const Spacer(),
           Text(value,
               style:

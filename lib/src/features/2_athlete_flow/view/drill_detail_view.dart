@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:io';
 import 'package:video_player/video_player.dart';
 // Import the new ViewModel
 import '../viewmodel/drill_detail_viewmodel.dart';

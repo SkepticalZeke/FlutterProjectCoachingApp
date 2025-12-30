@@ -49,7 +49,7 @@ class SkillProgressBar extends StatelessWidget {
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   // 6. UI Theme: Use a light, secondary text color
-                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
               ),
             ],
@@ -63,7 +63,7 @@ class SkillProgressBar extends StatelessWidget {
               value: progress,
               minHeight: 12,
               // 7. UI Theme: Use a subtle background for the bar
-              backgroundColor: theme.colorScheme.onSurface.withOpacity(0.1),
+              backgroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.1),
               // 8. UI Theme: Kept Amber for XP, it's a great accent color
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
             ),
@@ -77,7 +77,7 @@ class SkillProgressBar extends StatelessWidget {
             style: TextStyle(
               fontSize: 14,
               // 10. UI Theme: Use a light, secondary text color
-              color: theme.colorScheme.onSurface.withOpacity(0.7),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
             ),
           ),
         ],

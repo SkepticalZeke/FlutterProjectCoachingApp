@@ -43,13 +43,13 @@ class _CoachNotificationsViewState extends State<CoachNotificationsView> {
                 children: [
                   Icon(Icons.notifications_none,
                       size: 80,
-                      color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
                   const SizedBox(height: 20),
                   Text('No pending submissions, all clear!',
                       style: TextStyle(
                           fontSize: 18,
                           color:
-                              theme.colorScheme.onSurface.withOpacity(0.7))),
+                              theme.colorScheme.onSurface.withValues(alpha: 0.7))),
                 ],
               ),
             );
@@ -68,7 +68,7 @@ class _CoachNotificationsViewState extends State<CoachNotificationsView> {
                 margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.amber.withOpacity(0.5), width: 1),
+                  side: BorderSide(color: Colors.amber.withValues(alpha: 0.5), width: 1),
                 ),
                 child: ListTile(
                   leading: const Icon(Icons.hourglass_top, color: Colors.amber, size: 30),

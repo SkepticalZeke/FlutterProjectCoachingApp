@@ -85,14 +85,14 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
                 children: [
                   Icon(Icons.people_outline,
                       size: 60,
-                      color: theme.colorScheme.onSurface.withOpacity(0.5)),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
                   const SizedBox(height: 10),
                   const Text('No athletes found.'),
                   Text(
                     'Add your first athlete from the Registration screen.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                        color: theme.colorScheme.onSurface.withOpacity(0.7)),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
                   ),
                 ],
               ),
@@ -226,7 +226,7 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
           ],
         ),
         trailing: Icon(Icons.chevron_right,
-            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5)),
+            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
         onTap: () {
           // 6. Navigation is handled by the View
           Map<String, dynamic> dataToPass =

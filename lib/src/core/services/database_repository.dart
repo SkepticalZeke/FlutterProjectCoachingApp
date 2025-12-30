@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // We need auth to get the UID
+import '../models/athlete.dart';
 
 /*
   MODEL (M)
@@ -314,6 +315,57 @@ class DatabaseRepository {
     // For simplicity, we'll leave this for now, but in a real app, you'd link them.
 
     await batch.commit();
+  }
+
+  // Registers a new athlete with the coach
+  Future<Athlete> registerNewAthlete({
+    required String name,
+    required String pin,
+    required String coachEmail,
+  }) async {
+    try {
+      // First, find the coach by email
+      final coachSnapshot = await _firestore
+          .collection('coaches')
+          .where('email', isEqualTo: coachEmail)
+          .limit(1)
+          .get();
+
+      if (coachSnapshot.docs.isEmpty) {
+        throw Exception('Coach with email $coachEmail not found');
+      }
+
+      final coachDoc = coachSnapshot.docs.first;
+      final coachUid = coachDoc.id;
+
+      // Create the athlete document
+      final athleteRef = _firestore.collection('athletes').doc();
+      final newAthlete = Athlete(
+        id: athleteRef.id,
+        name: name,
+        pin: pin,
+        coachUid: coachUid,
+        level: 1,
+        streak: 0,
+        progress: 0.0,
+        status: 'Training Not Started',
+        skillFocus: 'General',
+        difficulty: 'Easy',
+        stars: 0,
+        selectedOutfit: 101,
+        selectedShoe: 201,
+        selectedEquipment: 301,
+        currentXp: 0.0,
+        requiredXp: 1000.0,
+        totalXp: 0,
+      );
+
+      await athleteRef.set(newAthlete.toMap());
+
+      return newAthlete;
+    } catch (e) {
+      rethrow;
+    }
   }
 
   // --- Athlete Avatar/Store Logic ---

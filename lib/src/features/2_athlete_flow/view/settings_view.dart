@@ -139,7 +139,7 @@ class _SettingsViewState extends State<SettingsView> {
               onPressed: () {
                 Navigator.of(ctx).pop();
                 _viewModel.logout();
-                Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                Navigator.of(context).pushNamedAndRemoveUntil('/role-selection', (route) => false);
               },
             ),
           ],
@@ -205,7 +205,7 @@ class _SettingsViewState extends State<SettingsView> {
             secondary: Icon(Icons.volume_up, color: theme.colorScheme.primary),
             title: const Text('App Sounds', style: TextStyle(fontWeight: FontWeight.w500)),
             value: _appSounds,
-            activeColor: theme.colorScheme.primary,
+            activeThumbColor: theme.colorScheme.primary,
             onChanged: (bool value) {
               setState(() {
                 _appSounds = value;
@@ -219,7 +219,7 @@ class _SettingsViewState extends State<SettingsView> {
             secondary: Icon(Icons.notifications_active, color: theme.colorScheme.primary),
             title: const Text('Push Notifications', style: TextStyle(fontWeight: FontWeight.w500)),
             value: _pushNotifications,
-            activeColor: theme.colorScheme.primary,
+            activeThumbColor: theme.colorScheme.primary,
             onChanged: (bool value) {
               setState(() {
                 _pushNotifications = value;

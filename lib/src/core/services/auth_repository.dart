@@ -1,58 +1,51 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'api_service.dart';
 
 /*
   MODEL (M)
-  This is the Auth Repository. Its only job is to talk to Firebase
-  Authentication. It doesn't know about any ViewModels or Views.
-  It just does its job and returns the user or throws an error.
+  This is the Auth Repository. Its only job is to handle authentication
+  through the Cloud Run API. It doesn't know about any ViewModels or Views.
+  It just does its job and returns data or throws an error.
 */
 class AuthRepository {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final ApiService _api = ApiService();
 
   // Registers a new coach with email and password
-  // Returns the new User object on success, or throws an error
-  Future<User?> registerCoachWithEmail(String email, String password) async {
+  // Returns user data on success, or throws an error
+  // Note: Uses /auth/coach/register endpoint
+  Future<Map<String, dynamic>> registerCoachWithEmail(
+      String email, String password) async {
     try {
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      return userCredential.user;
-    } on FirebaseAuthException {
-      // Re-throw the specific Firebase error to be handled by the ViewModel
-      rethrow;
+      final response = await _api.post('/auth/coach/register', {
+        'email': email,
+        'password': password,
+      }, authRequired: false);
+      return response;
     } catch (e) {
-      throw Exception('An unknown error occurred: $e');
+      rethrow;
     }
   }
 
   // Logs in a coach
-  Future<User?> loginCoachWithEmail(String email, String password) async {
+  // Note: Uses /auth/coach/login endpoint
+  Future<Map<String, dynamic>> loginCoachWithEmail(
+      String email, String password) async {
     try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-      return userCredential.user;
-    } on FirebaseAuthException {
-      rethrow;
+      final response = await _api.post('/auth/coach/login', {
+        'email': email,
+        'password': password,
+      }, authRequired: false);
+      return response;
     } catch (e) {
-      throw Exception('An unknown error occurred: $e');
+      rethrow;
     }
   }
 
-  // Signs out the current user
+  // Signs out the current user (clears local token)
   Future<void> signOut() async {
     try {
-      await _auth.signOut();
+      await _api.clearToken();
     } catch (e) {
       throw Exception('An error occurred during sign out: $e');
     }
   }
-  
-  // Gets the current user (if any)
-  User? get currentUser => _auth.currentUser;
-
-  // Stream for authentication state changes
-  Stream<User?> get authStateChanges => _auth.authStateChanges();
 }

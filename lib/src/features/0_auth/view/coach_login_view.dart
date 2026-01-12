@@ -158,13 +158,24 @@ class _CoachLoginViewState extends State<CoachLoginView> {
                         ),
                 ),
                 const SizedBox(height: 20),
-                TextButton(
-                  onPressed: _viewModel.isLoading ? null : () {
-                    // Placeholder for "Join Code" feature
-                  },
-                  child: const Text(
-                    'Have an Athlete Join Code?',
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Don\'t have an account?',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: _viewModel.isLoading
+                          ? null
+                          : () {
+                              Navigator.of(context).pushNamed('/coach-registration');
+                            },
+                      child: const Text('Sign Up'),
+                    ),
+                  ],
                 ),
               ],
             ),

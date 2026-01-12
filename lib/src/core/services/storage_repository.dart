@@ -1,29 +1,26 @@
 import 'dart:io';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Import Auth
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'api_service.dart';
 
 /*
   MODEL (M)
   This is the Storage Repository. Its only job is to
-  upload files to Firebase Storage.
+  upload files to the backend API.
 */
 class StorageRepository {
-  final FirebaseStorage _storage = FirebaseStorage.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance; // Get auth instance
+  final ApiService _api = ApiService();
+  static const String _baseUrl = 'https://ikh-service-150046979522.asia-southeast1.run.app';
 
   // Uploads an athlete's video submission
   Future<String> uploadSubmissionVideo(File file, String athleteId) async {
     try {
-      final String videoFileName =
-          '${athleteId}_${DateTime.now().millisecondsSinceEpoch}.mp4';
-
-      UploadTask uploadTask = _storage
-          .ref('athlete_submissions/$athleteId/$videoFileName')
-          .putFile(file);
-
-      TaskSnapshot snapshot = await uploadTask;
-      String downloadUrl = await snapshot.ref.getDownloadURL();
-      return downloadUrl;
+      final response = await _uploadVideo(
+        file: file,
+        uploadType: 'athlete_submission',
+        athleteId: athleteId,
+      );
+      return response['downloadUrl'];
     } catch (e) {
       // Re-throw to be handled by ViewModel
       rethrow;
@@ -32,24 +29,71 @@ class StorageRepository {
 
   // Uploads a coach's example drill video
   Future<String> uploadCoachDrillVideo(File file) async {
-    final String? coachUid = _auth.currentUser?.uid;
-    if (coachUid == null) {
-      throw Exception("No coach is logged in.");
-    }
     try {
-      final String videoFileName =
-          '${coachUid}_${DateTime.now().millisecondsSinceEpoch}.mp4';
-
-      UploadTask uploadTask = _storage
-          .ref('coach_drills/$coachUid/$videoFileName')
-          .putFile(file);
-
-      TaskSnapshot snapshot = await uploadTask;
-      String downloadUrl = await snapshot.ref.getDownloadURL();
-      return downloadUrl;
+      final response = await _uploadVideo(
+        file: file,
+        uploadType: 'coach_drill',
+      );
+      return response['downloadUrl'];
     } catch (e) {
       // Re-throw to be handled by ViewModel
       rethrow;
+    }
+  }
+
+  // Private helper method to upload video using multipart/form-data
+  Future<Map<String, dynamic>> _uploadVideo({
+    required File file,
+    required String uploadType,
+    String? athleteId,
+  }) async {
+    try {
+      final token = _api.token;
+      if (token == null) {
+        throw Exception('No authentication token available');
+      }
+
+      // Create multipart request
+      final uri = Uri.parse('$_baseUrl/api/upload/video');
+      final request = http.MultipartRequest('POST', uri);
+
+      // Add headers
+      request.headers['Authorization'] = 'Bearer $token';
+
+      // Add fields
+      request.fields['uploadType'] = uploadType;
+      if (athleteId != null) {
+        request.fields['athleteId'] = athleteId;
+      }
+
+      // Add video file
+      final videoStream = http.ByteStream(file.openRead());
+      final videoLength = await file.length();
+      final multipartFile = http.MultipartFile(
+        'video',
+        videoStream,
+        videoLength,
+        filename: file.path.split('/').last,
+      );
+      request.files.add(multipartFile);
+
+      // Send request
+      final streamedResponse = await request.send().timeout(
+        const Duration(minutes: 5), // 5 minute timeout for large videos
+      );
+
+      // Get response
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        // Parse JSON response
+        final jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
+        return jsonResponse;
+      } else {
+        throw Exception('Upload failed: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Failed to upload video: $e');
     }
   }
 }

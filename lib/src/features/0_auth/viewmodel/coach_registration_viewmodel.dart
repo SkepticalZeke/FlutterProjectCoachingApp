@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 // Import our Models
 import '../../../core/services/auth_repository.dart';
 import '../../../core/services/database_repository.dart';
+import '../../../core/services/api_service.dart';
 
 /*
   VIEW-MODEL (VM)
@@ -14,6 +14,7 @@ class CoachRegistrationViewModel extends ChangeNotifier {
   // 1. Import the repositories (our Model)
   final AuthRepository _authRepo = AuthRepository();
   final DatabaseRepository _dbRepo = DatabaseRepository();
+  final ApiService _api = ApiService();
 
   // 2. State is held in the ViewModel
   bool _isLoading = false;
@@ -33,45 +34,67 @@ class CoachRegistrationViewModel extends ChangeNotifier {
     _setLoading(true);
     _clearError();
 
-    try {
-      // Step 1: Call the Auth Repository to create the user
-      final User? newCoach =
-          await _authRepo.registerCoachWithEmail(email, password);
+    debugPrint('🔵 Starting coach registration for: $email');
 
-      if (newCoach != null) {
+    try {
+      // Step 1: Call the Auth Repository to create the user via API
+      debugPrint('🔵 Calling API to register coach...');
+      final response = await _authRepo.registerCoachWithEmail(email, password);
+      debugPrint('🟢 Registration API response received');
+
+      if (response['token'] != null && response['coachUid'] != null) {
+        // Store the auth token and coachUid
+        debugPrint('🟢 Token received, saving coach data...');
+        _api.setToken(response['token'], coachUid: response['coachUid']);
+
         // Step 2: Call the Database Repository to save the data
+        debugPrint('🔵 Creating coach and first athlete...');
         await _dbRepo.createCoachAndFirstAthlete(
-          coachUid: newCoach.uid,
+          coachUid: response['coachUid'],
           coachEmail: email,
           athleteName: athleteName,
           athletePin: athletePin,
         );
 
         // Success
+        debugPrint('🟢 Registration completed successfully!');
         _setLoading(false);
         return true;
       } else {
-        _setError('Failed to create user.');
+        debugPrint('🔴 Invalid response: Missing token or coachUid');
+        _setError('Invalid server response. Missing required data.');
         _setLoading(false);
         return false;
       }
-    } on FirebaseAuthException catch (e) {
-      // Handle specific Firebase Auth errors
-      if (e.code == 'weak-password') {
-        _setError('The password provided is too weak.');
-      } else if (e.code == 'email-already-in-use') {
-        _setError('An account already exists for that email.');
-      } else if (e.code == 'invalid-email') {
-        _setError('The email address is not valid.');
-      } else {
-        _setError('An error occurred: ${e.message}');
-      }
+    } on ApiException catch (e) {
+      // Handle specific API errors
+      debugPrint('🔴 API Error [${e.statusCode}]: ${e.message}');
       _setLoading(false);
+
+      // Parse error based on status code and message
+      if (e.statusCode == 400) {
+        if (e.message.toLowerCase().contains('password')) {
+          _setError('Password must be at least 6 characters.');
+        } else if (e.message.toLowerCase().contains('email')) {
+          _setError('Please enter a valid email address.');
+        } else {
+          _setError(e.message);
+        }
+      } else if (e.statusCode == 409 || e.message.toLowerCase().contains('already exists')) {
+        _setError('An account with this email already exists.');
+      } else if (e.statusCode == 408) {
+        _setError('Request timeout. Please check your connection.');
+      } else if (e.statusCode == 0) {
+        _setError('Cannot connect to server. Please check your internet.');
+      } else {
+        _setError(e.message.isNotEmpty ? e.message : 'Registration failed. Please try again.');
+      }
       return false;
     } catch (e) {
-      // Handle other errors (like from the database)
-      _setError(e.toString());
+      // Handle unexpected errors
+      debugPrint('🔴 Unexpected error: ${e.toString()}');
       _setLoading(false);
+      _setError('An unexpected error occurred. Please try again.');
       return false;
     }
   }

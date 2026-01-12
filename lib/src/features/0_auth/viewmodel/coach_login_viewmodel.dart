@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 // Import our Model
 import '../../../core/services/auth_repository.dart';
+import '../../../core/services/api_service.dart';
 
 /*
   VIEW-MODEL (VM)
@@ -10,6 +10,7 @@ import '../../../core/services/auth_repository.dart';
 class CoachLoginViewModel extends ChangeNotifier {
   // 1. Import the repository
   final AuthRepository _authRepo = AuthRepository();
+  final ApiService _api = ApiService();
 
   // 2. State
   bool _isLoading = false;
@@ -28,36 +29,39 @@ class CoachLoginViewModel extends ChangeNotifier {
     _clearError();
 
     try {
-      // Call the Auth Repository to log in
-      final User? user = await _authRepo.loginCoachWithEmail(email, password);
+      // Call the Auth Repository to log in via API
+      final response = await _authRepo.loginCoachWithEmail(email, password);
 
-      if (user != null) {
-        // Success
+      // Store the auth token and coachUid from the API response
+      if (response['token'] != null) {
+        _api.setToken(response['token'], coachUid: response['coachUid']);
         _setLoading(false);
         return true;
       } else {
-        // This should not happen if signInWithEmailAndPassword succeeds
-        _setError('An unknown error occurred.');
+        _setError('Invalid server response. Missing required data.');
         _setLoading(false);
         return false;
       }
-    } on FirebaseAuthException catch (e) {
-      // Handle specific Firebase Auth errors
-      if (e.code == 'invalid-credential' ||
-          e.code == 'user-not-found' ||
-          e.code == 'wrong-password') {
-        _setError('Invalid email or password.');
-      } else if (e.code == 'invalid-email') {
-        _setError('The email address is not valid.');
-      } else {
-        _setError('An error occurred: ${e.message}');
-      }
+    } on ApiException catch (e) {
+      // Handle specific API errors
       _setLoading(false);
+
+      if (e.statusCode == 401 || e.statusCode == 403) {
+        _setError('Invalid email or password.');
+      } else if (e.statusCode == 404) {
+        _setError('Account not found. Please register first.');
+      } else if (e.statusCode == 408) {
+        _setError('Request timeout. Please check your connection.');
+      } else if (e.statusCode == 0) {
+        _setError('Cannot connect to server. Please check your internet.');
+      } else {
+        _setError(e.message.isNotEmpty ? e.message : 'Login failed. Please try again.');
+      }
       return false;
     } catch (e) {
-      // Handle other errors
-      _setError(e.toString());
+      // Handle unexpected errors
       _setLoading(false);
+      _setError('An unexpected error occurred: ${e.toString()}');
       return false;
     }
   }

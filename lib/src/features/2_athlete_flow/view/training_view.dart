@@ -118,7 +118,7 @@ class _TrainingViewState extends State<TrainingView> {
                       // Navigate to detail (Preview Mode)
                       final routeArgs = {
                         'athleteId': widget.athleteData['id'],
-                        'drillId': drill['id'] ?? 'default_${index}',
+                        'drillId': drill['id'] ?? 'default_$index',
                         'drillData': drill,
                       };
                       Navigator.of(context).pushNamed(

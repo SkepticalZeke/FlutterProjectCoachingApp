@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lottie/lottie.dart';
 // Import the new ViewModel
 import '../viewmodel/splash_viewmodel.dart';
 
 /*
   VIEW (V)
-  This is the splash screen. Its sole purpose is to check the auth state
-  and redirect the user immediately upon loading.
+  This is the splash screen. Its sole purpose is to sign out any existing
+  session and redirect the user to role selection.
 */
 class SplashView extends StatefulWidget {
   const SplashView({super.key});
@@ -17,30 +17,26 @@ class SplashView extends StatefulWidget {
 
 class _SplashViewState extends State<SplashView> {
   final _viewModel = SplashViewModel();
-  
-  // Flag to ensure navigation happens only once
-  bool _hasNavigated = false;
 
   @override
   void initState() {
     super.initState();
-    // 1. Listen for the *first* authentication state change
-    _viewModel.authStateChanges.listen((User? user) {
-      // 2. Only navigate if the widget is mounted and we haven't gone anywhere
-      if (mounted && !_hasNavigated) {
-        _hasNavigated = true;
-        // 3. Get the correct route from the ViewModel
-        final route = _viewModel.getInitialRoute(user);
-        
-        // 4. Navigate and clear the navigation stack
-        Navigator.of(context).pushReplacementNamed(route);
-      }
-    });
+    // Sign out and navigate to role selection
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    // Get the initial route (signs out user first)
+    final route = await _viewModel.getInitialRoute();
+
+    // Navigate if widget is still mounted
+    if (mounted) {
+      Navigator.of(context).pushReplacementNamed(route);
+    }
   }
 
   @override
   void dispose() {
-    // No explicit dispose needed for Stream.listen unless stored as a Subscription
     super.dispose();
   }
 
@@ -55,10 +51,12 @@ class _SplashViewState extends State<SplashView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.sports_tennis,
-              size: 100,
-              color: theme.colorScheme.primary,
+            // Lottie animation
+            Lottie.network(
+              'https://lottie.host/1f8628ae-3cec-43be-b8d9-ac2835479081/xMZnA2zc9O.json',
+              width: 300,
+              height: 300,
+              fit: BoxFit.contain,
             ),
             const SizedBox(height: 20),
             Text(
@@ -68,11 +66,9 @@ class _SplashViewState extends State<SplashView> {
                 color: theme.colorScheme.primary,
               ),
             ),
-            const SizedBox(height: 40),
-            const CircularProgressIndicator(),
             const SizedBox(height: 10),
             Text(
-              'Checking login status...',
+              'Loading...',
               style: theme.textTheme.bodyMedium,
             ),
           ],

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter pub get:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(cmd /c \"npm install multer\")",
+      "Bash(npm install)",
+      "Bash(node -e:*)"
+    ]
+  }
+}

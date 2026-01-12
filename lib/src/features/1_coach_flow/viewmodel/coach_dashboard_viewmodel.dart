@@ -1,15 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 // Import our Models
-import '../../../core/services/auth_repository.dart';
+import '../../../core/services/api_service.dart';
 import '../../../core/services/database_repository.dart';
 
 class CoachDashboardViewModel extends ChangeNotifier {
-  final AuthRepository _authRepo = AuthRepository();
+  final ApiService _api = ApiService();
   final DatabaseRepository _dbRepo = DatabaseRepository();
 
-  String? get coachUid => _authRepo.currentUser?.uid;
+  String? get coachUid => _api.coachUid;
 
   // State for loading indicators during add actions
   bool _isProcessing = false;
@@ -45,7 +44,7 @@ class CoachDashboardViewModel extends ChangeNotifier {
   
   Future<void> logout() async {
     try {
-      await _authRepo.signOut();
+      await _api.clearToken();
     } catch (e) {
       debugPrint("Error logging out: $e");
     }

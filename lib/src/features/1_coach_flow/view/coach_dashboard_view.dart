@@ -39,7 +39,7 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
     await _viewModel.logout();
     if (mounted) {
       Navigator.of(context)
-          .pushNamedAndRemoveUntil('/login', (route) => false);
+          .pushNamedAndRemoveUntil('/role-selection', (route) => false);
     }
   }
 
@@ -68,6 +68,7 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Coach Dashboard'),
+        automaticallyImplyLeading: false, // Disable back button
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications),

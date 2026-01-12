@@ -1,14 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; 
 import '../models/athlete.dart';
 import 'api_service.dart'; // Import the helper
 
 class DatabaseRepository {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   final ApiService _api = ApiService(); // Use the API helper
-
-  String? get _coachUid => _auth.currentUser?.uid;
 
   // --- WRITES: MOVED TO CLOUD RUN ---
 
@@ -198,11 +192,10 @@ class DatabaseRepository {
     } catch (e) {
       // If the server returns 401 (Incorrect PIN) or 404 (Not Found),
       // the ApiService usually throws an exception.
-      
+
       // We return null here to let the ViewModel handle the "Invalid login" state
       // just like it did before.
-      print("Login failed: $e");
-      return null; 
+      return null;
     }
   }
 
@@ -268,7 +261,6 @@ class DatabaseRepository {
       });
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print("Error fetching coach drills: $e");
       return [];
     }
   }

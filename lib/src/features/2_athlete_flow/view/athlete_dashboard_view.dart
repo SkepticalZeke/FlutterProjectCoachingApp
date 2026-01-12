@@ -77,6 +77,7 @@ class _AthleteDashboardViewState extends State<AthleteDashboardView> {
         return Scaffold(
           appBar: AppBar(
             title: const Text('CoachFitness Training'),
+            automaticallyImplyLeading: false, // Disable back button
             elevation: 0,
             actions: [
               // Manual Refresh Button

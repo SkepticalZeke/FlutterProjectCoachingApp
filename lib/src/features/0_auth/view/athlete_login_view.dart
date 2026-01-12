@@ -84,7 +84,9 @@ class _AthleteLoginViewState extends State<AthleteLoginView> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Athlete Login')),
+      appBar: AppBar(
+        title: const Text('Athlete Login'),
+      ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(32.0),
@@ -168,30 +170,6 @@ class _AthleteLoginViewState extends State<AthleteLoginView> {
                               'Contact your coach to recover your name or PIN.');
                         },
                   child: const Text('Forgot Name or PIN?'),
-                ),
-                OutlinedButton(
-                  onPressed: _viewModel.isLoading
-                      ? null
-                      : () {
-                          Navigator.of(context)
-                              .pushNamed('/coach-registration');
-                        },
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15),
-                    side: BorderSide(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.7)),
-                    foregroundColor: theme.colorScheme.primary,
-                  ),
-                  child: const Text('New Coach? Sign Up Here'),
-                ),
-                const SizedBox(height: 30),
-                TextButton(
-                  onPressed: _viewModel.isLoading
-                      ? null
-                      : () {
-                          Navigator.of(context).pushNamed('/coach-login');
-                        },
-                  child: const Text('Already a Coach? Log In'),
                 ),
               ],
             ),

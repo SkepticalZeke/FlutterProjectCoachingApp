@@ -4,6 +4,7 @@
  *
  * Exports all Cloud Functions as independent microservices
  * Each function is separately deployable and scalable
+ * ALL functions use Gen 2 (Cloud Run) infrastructure
  *
  * Project: fitness-coaching-app-5633f
  * Region: asia-southeast1 (Singapore)
@@ -44,12 +45,14 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.checkAthleteProgress = exports.onAthleteUpdate = exports.onDrillUpdate = exports.clearNotifications = exports.markAllNotificationsRead = exports.markNotificationRead = exports.getNotifications = exports.reviewDrill = exports.submitDrill = exports.createDrill = exports.getDrill = exports.getDrills = exports.updateCoach = exports.createCoach = exports.getCoach = exports.getCoaches = exports.deleteAthlete = exports.updateAthlete = exports.createAthlete = exports.getAthlete = exports.getAthletes = void 0;
-const functions = __importStar(require("firebase-functions"));
+// Gen 2 imports
+const firestore_1 = require("firebase-functions/v2/firestore");
+const scheduler_1 = require("firebase-functions/v2/scheduler");
 // Initialize Firebase FIRST
 const firebase_1 = __importStar(require("./firebase"));
 const config_1 = require("./config");
 // =============================================================================
-// Athlete Functions
+// Athlete Functions (Gen 2 Callable)
 // =============================================================================
 var athletes_1 = require("./functions/athletes");
 Object.defineProperty(exports, "getAthletes", { enumerable: true, get: function () { return athletes_1.getAthletes; } });
@@ -58,7 +61,7 @@ Object.defineProperty(exports, "createAthlete", { enumerable: true, get: functio
 Object.defineProperty(exports, "updateAthlete", { enumerable: true, get: function () { return athletes_1.updateAthlete; } });
 Object.defineProperty(exports, "deleteAthlete", { enumerable: true, get: function () { return athletes_1.deleteAthlete; } });
 // =============================================================================
-// Coach Functions
+// Coach Functions (Gen 2 Callable)
 // =============================================================================
 var coaches_1 = require("./functions/coaches");
 Object.defineProperty(exports, "getCoaches", { enumerable: true, get: function () { return coaches_1.getCoaches; } });
@@ -66,7 +69,7 @@ Object.defineProperty(exports, "getCoach", { enumerable: true, get: function () 
 Object.defineProperty(exports, "createCoach", { enumerable: true, get: function () { return coaches_1.createCoach; } });
 Object.defineProperty(exports, "updateCoach", { enumerable: true, get: function () { return coaches_1.updateCoach; } });
 // =============================================================================
-// Drill Functions
+// Drill Functions (Gen 2 Callable)
 // =============================================================================
 var drills_1 = require("./functions/drills");
 Object.defineProperty(exports, "getDrills", { enumerable: true, get: function () { return drills_1.getDrills; } });
@@ -75,7 +78,7 @@ Object.defineProperty(exports, "createDrill", { enumerable: true, get: function 
 Object.defineProperty(exports, "submitDrill", { enumerable: true, get: function () { return drills_1.submitDrill; } });
 Object.defineProperty(exports, "reviewDrill", { enumerable: true, get: function () { return drills_1.reviewDrill; } });
 // =============================================================================
-// Notification Functions
+// Notification Functions (Gen 2 Callable)
 // =============================================================================
 var notifications_1 = require("./functions/notifications");
 Object.defineProperty(exports, "getNotifications", { enumerable: true, get: function () { return notifications_1.getNotifications; } });
@@ -83,54 +86,59 @@ Object.defineProperty(exports, "markNotificationRead", { enumerable: true, get: 
 Object.defineProperty(exports, "markAllNotificationsRead", { enumerable: true, get: function () { return notifications_1.markAllNotificationsRead; } });
 Object.defineProperty(exports, "clearNotifications", { enumerable: true, get: function () { return notifications_1.clearNotifications; } });
 // =============================================================================
-// Firestore Triggers (kept from original)
+// Firestore Triggers (Gen 2)
 // =============================================================================
-const region = functions.region(config_1.config.region);
 /**
- * On Drill Update Trigger
- * Fires when any drill document is updated
+ * On Drill Update Trigger (Gen 2)
+ * Fires when any drill document is created, updated, or deleted
  */
-exports.onDrillUpdate = region.firestore
-    .document('drills/{drillId}')
-    .onWrite(async (change, context) => {
-    const beforeData = change.before.data();
-    const afterData = change.after.data();
+exports.onDrillUpdate = (0, firestore_1.onDocumentWritten)({
+    document: 'drills/{drillId}',
+    region: config_1.config.region,
+}, async (event) => {
+    const beforeData = event.data?.before.data();
+    const afterData = event.data?.after.data();
     // Check if drill was completed
     if (beforeData?.completed === false && afterData?.completed === true) {
-        console.log(`Drill ${context.params.drillId} marked as completed`);
+        console.log(`Drill ${event.params.drillId} marked as completed`);
         if (afterData?.athleteId) {
             await updateAthleteProgress(afterData.athleteId);
         }
     }
 });
 /**
- * On Athlete Update Trigger
- * Fires when an athlete document is updated
+ * On Athlete Update Trigger (Gen 2)
+ * Fires when an athlete document is created, updated, or deleted
  */
-exports.onAthleteUpdate = region.firestore
-    .document('athletes/{athleteId}')
-    .onWrite(async (change, context) => {
-    const beforeData = change.before.data();
-    const afterData = change.after.data();
+exports.onAthleteUpdate = (0, firestore_1.onDocumentWritten)({
+    document: 'athletes/{athleteId}',
+    region: config_1.config.region,
+}, async (event) => {
+    const beforeData = event.data?.before.data();
+    const afterData = event.data?.after.data();
     // Streak milestone notification
     if (beforeData?.streak !== afterData?.streak && afterData?.streak) {
         if (afterData.streak % 7 === 0) {
-            await sendNotification(context.params.athleteId, `Congratulations! You've maintained a ${afterData.streak}-day streak!`, 'streak_achievement');
+            await sendNotification(event.params.athleteId, `Congratulations! You've maintained a ${afterData.streak}-day streak!`, 'streak_achievement');
         }
     }
     // Level up notification
     if (beforeData?.level !== afterData?.level && afterData?.level) {
-        await sendNotification(context.params.athleteId, `Level up! You're now level ${afterData.level}!`, 'level_up');
+        await sendNotification(event.params.athleteId, `Level up! You're now level ${afterData.level}!`, 'level_up');
     }
 });
+// =============================================================================
+// Scheduled Functions (Gen 2)
+// =============================================================================
 /**
- * Scheduled: Check Athlete Progress
- * Runs every 30 minutes during active hours
+ * Scheduled: Check Athlete Progress (Gen 2)
+ * Runs every 30 minutes during active hours (Singapore time)
  */
-exports.checkAthleteProgress = region.pubsub
-    .schedule('every 30 minutes from 06:00 to 00:00')
-    .timeZone('Asia/Singapore')
-    .onRun(async () => {
+exports.checkAthleteProgress = (0, scheduler_1.onSchedule)({
+    schedule: 'every 30 minutes from 06:00 to 23:30',
+    timeZone: 'Asia/Singapore',
+    region: config_1.config.region,
+}, async () => {
     console.log('Checking athlete progress...');
     const athletesSnapshot = await firebase_1.db.collection('athletes').get();
     for (const athleteDoc of athletesSnapshot.docs) {
@@ -143,7 +151,6 @@ exports.checkAthleteProgress = region.pubsub
             await sendNotification(athleteDoc.id, 'You have pending drills to complete!', 'drill_reminder');
         }
     }
-    return null;
 });
 // =============================================================================
 // Helper Functions

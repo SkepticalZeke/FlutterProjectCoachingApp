@@ -3,20 +3,23 @@
  * 
  * Exports all Cloud Functions as independent microservices
  * Each function is separately deployable and scalable
+ * ALL functions use Gen 2 (Cloud Run) infrastructure
  * 
  * Project: fitness-coaching-app-5633f
  * Region: asia-southeast1 (Singapore)
  * Runtime: Node.js 22 with TypeScript
  */
 
-import * as functions from 'firebase-functions';
+// Gen 2 imports
+import { onDocumentWritten } from 'firebase-functions/v2/firestore';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
 
 // Initialize Firebase FIRST
 import admin, { db } from './firebase';
 import { config } from './config';
 
 // =============================================================================
-// Athlete Functions
+// Athlete Functions (Gen 2 Callable)
 // =============================================================================
 
 export {
@@ -28,7 +31,7 @@ export {
 } from './functions/athletes';
 
 // =============================================================================
-// Coach Functions
+// Coach Functions (Gen 2 Callable)
 // =============================================================================
 
 export {
@@ -39,7 +42,7 @@ export {
 } from './functions/coaches';
 
 // =============================================================================
-// Drill Functions
+// Drill Functions (Gen 2 Callable)
 // =============================================================================
 
 export {
@@ -51,7 +54,7 @@ export {
 } from './functions/drills';
 
 // =============================================================================
-// Notification Functions
+// Notification Functions (Gen 2 Callable)
 // =============================================================================
 
 export {
@@ -62,46 +65,51 @@ export {
 } from './functions/notifications';
 
 // =============================================================================
-// Firestore Triggers (kept from original)
+// Firestore Triggers (Gen 2)
 // =============================================================================
 
-const region = functions.region(config.region);
-
 /**
- * On Drill Update Trigger
- * Fires when any drill document is updated
+ * On Drill Update Trigger (Gen 2)
+ * Fires when any drill document is created, updated, or deleted
  */
-export const onDrillUpdate = region.firestore
-  .document('drills/{drillId}')
-  .onWrite(async (change, context) => {
-    const beforeData = change.before.data();
-    const afterData = change.after.data();
+export const onDrillUpdate = onDocumentWritten(
+  {
+    document: 'drills/{drillId}',
+    region: config.region,
+  },
+  async (event) => {
+    const beforeData = event.data?.before.data();
+    const afterData = event.data?.after.data();
 
     // Check if drill was completed
     if (beforeData?.completed === false && afterData?.completed === true) {
-      console.log(`Drill ${context.params.drillId} marked as completed`);
+      console.log(`Drill ${event.params.drillId} marked as completed`);
 
       if (afterData?.athleteId) {
         await updateAthleteProgress(afterData.athleteId);
       }
     }
-  });
+  }
+);
 
 /**
- * On Athlete Update Trigger
- * Fires when an athlete document is updated
+ * On Athlete Update Trigger (Gen 2)
+ * Fires when an athlete document is created, updated, or deleted
  */
-export const onAthleteUpdate = region.firestore
-  .document('athletes/{athleteId}')
-  .onWrite(async (change, context) => {
-    const beforeData = change.before.data();
-    const afterData = change.after.data();
+export const onAthleteUpdate = onDocumentWritten(
+  {
+    document: 'athletes/{athleteId}',
+    region: config.region,
+  },
+  async (event) => {
+    const beforeData = event.data?.before.data();
+    const afterData = event.data?.after.data();
 
     // Streak milestone notification
     if (beforeData?.streak !== afterData?.streak && afterData?.streak) {
       if (afterData.streak % 7 === 0) {
         await sendNotification(
-          context.params.athleteId,
+          event.params.athleteId,
           `Congratulations! You've maintained a ${afterData.streak}-day streak!`,
           'streak_achievement'
         );
@@ -111,21 +119,29 @@ export const onAthleteUpdate = region.firestore
     // Level up notification
     if (beforeData?.level !== afterData?.level && afterData?.level) {
       await sendNotification(
-        context.params.athleteId,
+        event.params.athleteId,
         `Level up! You're now level ${afterData.level}!`,
         'level_up'
       );
     }
-  });
+  }
+);
+
+// =============================================================================
+// Scheduled Functions (Gen 2)
+// =============================================================================
 
 /**
- * Scheduled: Check Athlete Progress
- * Runs every 30 minutes during active hours
+ * Scheduled: Check Athlete Progress (Gen 2)
+ * Runs every 30 minutes during active hours (Singapore time)
  */
-export const checkAthleteProgress = region.pubsub
-  .schedule('every 30 minutes from 06:00 to 00:00')
-  .timeZone('Asia/Singapore')
-  .onRun(async () => {
+export const checkAthleteProgress = onSchedule(
+  {
+    schedule: 'every 30 minutes from 06:00 to 23:30',
+    timeZone: 'Asia/Singapore',
+    region: config.region,
+  },
+  async () => {
     console.log('Checking athlete progress...');
 
     const athletesSnapshot = await db.collection('athletes').get();
@@ -145,9 +161,8 @@ export const checkAthleteProgress = region.pubsub
         );
       }
     }
-
-    return null;
-  });
+  }
+);
 
 // =============================================================================
 // Helper Functions

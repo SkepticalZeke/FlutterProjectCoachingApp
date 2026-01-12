@@ -1,13 +1,8 @@
 /**
  * Firebase Cloud Functions Entry Point
  * 
- * This file exports all Cloud Functions for the Fitness Coaching App
- * 
- * Architecture:
- * - Express.js API wrapped in onRequest for HTTP endpoints
- * - Independent microservices for different business domains
- * - Firestore triggers for real-time updates
- * - Scheduled functions for periodic tasks
+ * Exports all Cloud Functions as independent microservices
+ * Each function is separately deployable and scalable
  * 
  * Project: fitness-coaching-app-5633f
  * Region: asia-southeast1 (Singapore)
@@ -15,92 +10,66 @@
  */
 
 import * as functions from 'firebase-functions';
-import { onRequest } from 'firebase-functions/v2/https';
 
-// Initialize Firebase FIRST - before any other imports that use it
+// Initialize Firebase FIRST
 import admin, { db } from './firebase';
-
-// Import configuration (includes secret definitions)
-import { encryptionKeySecret, config } from './config';
-
-// Import Express app (after firebase is initialized)
-import app from './app';
+import { config } from './config';
 
 // =============================================================================
-// Region Configuration
+// Athlete Functions
+// =============================================================================
+
+export {
+  getAthletes,
+  getAthlete,
+  createAthlete,
+  updateAthlete,
+  deleteAthlete
+} from './functions/athletes';
+
+// =============================================================================
+// Coach Functions
+// =============================================================================
+
+export {
+  getCoaches,
+  getCoach,
+  createCoach,
+  updateCoach
+} from './functions/coaches';
+
+// =============================================================================
+// Drill Functions
+// =============================================================================
+
+export {
+  getDrills,
+  getDrill,
+  createDrill,
+  submitDrill,
+  reviewDrill
+} from './functions/drills';
+
+// =============================================================================
+// Notification Functions
+// =============================================================================
+
+export {
+  getNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+  clearNotifications
+} from './functions/notifications';
+
+// =============================================================================
+// Firestore Triggers (kept from original)
 // =============================================================================
 
 const region = functions.region(config.region);
 
-// =============================================================================
-// HTTP API (Express.js wrapped in Cloud Function)
-// =============================================================================
-
-/**
- * Main API endpoint
- * All HTTP requests are handled by Express.js
- * 
- * Base URL: https://asia-southeast1-fitness-coaching-app-5633f.cloudfunctions.net/api
- * 
- * Uses Firebase Secrets for the encryption key
- */
-export const api = onRequest(
-  {
-    region: config.region,
-    secrets: [encryptionKeySecret], // Inject secret at runtime
-  },
-  app
-);
-
-// =============================================================================
-// Scheduled Functions
-// =============================================================================
-
-/**
- * Check Athlete Progress
- * Runs every 30 minutes during active hours to remind athletes of pending drills
- */
-export const checkAthleteProgress = region.pubsub
-  .schedule('every 30 minutes from 06:00 to 00:00')
-  .timeZone('Asia/Singapore') // Updated for singapore region
-  .onRun(async () => {
-    console.log('Checking athlete progress...');
-
-    try {
-      // Get all athletes from Firestore
-      const athletesSnapshot = await db.collection('athletes').get();
-
-      for (const athleteDoc of athletesSnapshot.docs) {
-        const athleteId = athleteDoc.id;
-
-        // Check for incomplete drills assigned to this athlete
-        const drillsSnapshot = await db
-          .collection('drills')
-          .where('athleteId', '==', athleteId)
-          .where('completed', '==', false)
-          .get();
-
-        if (!drillsSnapshot.empty) {
-          // Send notification about pending drills
-          await sendNotification(athleteId, 'You have pending drills to complete!', 'drill_reminder');
-        }
-      }
-
-      console.log('Athlete progress check completed successfully');
-      return null;
-    } catch (error) {
-      console.error('Error checking athlete progress:', error);
-      throw new functions.https.HttpsError('internal', 'Failed to check athlete progress');
-    }
-  });
-
-// =============================================================================
-// Firestore Triggers
-// =============================================================================
-
 /**
  * On Drill Update Trigger
- * Fires when any drill document is created, updated, or deleted
+ * Fires when any drill document is updated
  */
 export const onDrillUpdate = region.firestore
   .document('drills/{drillId}')
@@ -112,22 +81,8 @@ export const onDrillUpdate = region.firestore
     if (beforeData?.completed === false && afterData?.completed === true) {
       console.log(`Drill ${context.params.drillId} marked as completed`);
 
-      // Update athlete's progress
-      if (afterData && afterData.athleteId) {
+      if (afterData?.athleteId) {
         await updateAthleteProgress(afterData.athleteId);
-
-        // Send notification to coach about completion
-        await notifyCoachOfCompletion(afterData.athleteId, context.params.drillId);
-      }
-    }
-
-    // Check if drill status changed to "Pending Review"
-    if (beforeData?.status !== 'Pending Review' && afterData?.status === 'Pending Review') {
-      console.log(`Drill ${context.params.drillId} is pending review`);
-
-      // Send notification to coach
-      if (afterData && afterData.athleteId) {
-        await sendNotificationToCoach(afterData.athleteId, 'A drill submission is pending your review', 'review_request');
       }
     }
   });
@@ -142,12 +97,9 @@ export const onAthleteUpdate = region.firestore
     const beforeData = change.before.data();
     const afterData = change.after.data();
 
-    // Check if streak has changed
+    // Streak milestone notification
     if (beforeData?.streak !== afterData?.streak && afterData?.streak) {
-      console.log(`Athlete ${context.params.athleteId} streak updated to ${afterData.streak}`);
-
-      // Send achievement notification if streak milestone reached
-      if (afterData.streak % 7 === 0) { // Every week streak
+      if (afterData.streak % 7 === 0) {
         await sendNotification(
           context.params.athleteId,
           `Congratulations! You've maintained a ${afterData.streak}-day streak!`,
@@ -156,10 +108,8 @@ export const onAthleteUpdate = region.firestore
       }
     }
 
-    // Check if level has changed
+    // Level up notification
     if (beforeData?.level !== afterData?.level && afterData?.level) {
-      console.log(`Athlete ${context.params.athleteId} leveled up to ${afterData.level}`);
-
       await sendNotification(
         context.params.athleteId,
         `Level up! You're now level ${afterData.level}!`,
@@ -168,133 +118,77 @@ export const onAthleteUpdate = region.firestore
     }
   });
 
+/**
+ * Scheduled: Check Athlete Progress
+ * Runs every 30 minutes during active hours
+ */
+export const checkAthleteProgress = region.pubsub
+  .schedule('every 30 minutes from 06:00 to 00:00')
+  .timeZone('Asia/Singapore')
+  .onRun(async () => {
+    console.log('Checking athlete progress...');
+
+    const athletesSnapshot = await db.collection('athletes').get();
+
+    for (const athleteDoc of athletesSnapshot.docs) {
+      const drillsSnapshot = await db
+        .collection('drills')
+        .where('athleteId', '==', athleteDoc.id)
+        .where('completed', '==', false)
+        .get();
+
+      if (!drillsSnapshot.empty) {
+        await sendNotification(
+          athleteDoc.id,
+          'You have pending drills to complete!',
+          'drill_reminder'
+        );
+      }
+    }
+
+    return null;
+  });
+
 // =============================================================================
 // Helper Functions
 // =============================================================================
 
-/**
- * Update athlete progress statistics
- */
 async function updateAthleteProgress(athleteId: string): Promise<void> {
-  try {
-    const athleteRef = db.collection('athletes').doc(athleteId);
-    const athleteDoc = await athleteRef.get();
+  const athleteRef = db.collection('athletes').doc(athleteId);
+  const athleteDoc = await athleteRef.get();
 
-    if (!athleteDoc.exists) {
-      console.error(`Athlete ${athleteId} does not exist`);
-      return;
+  if (!athleteDoc.exists) return;
+
+  const drillsSnapshot = await db
+    .collection('drills')
+    .where('athleteId', '==', athleteId)
+    .get();
+
+  let completedCount = 0;
+  let totalCount = 0;
+
+  drillsSnapshot.forEach(doc => {
+    totalCount++;
+    if (doc.data().completed) {
+      completedCount++;
     }
+  });
 
-    // Calculate progress percentage
-    const drillsSnapshot = await db
-      .collection('drills')
-      .where('athleteId', '==', athleteId)
-      .get();
+  const progress = totalCount > 0 ? completedCount / totalCount : 0;
 
-    let completedCount = 0;
-    let totalCount = 0;
-
-    drillsSnapshot.forEach((doc) => {
-      const drillData = doc.data();
-      totalCount++;
-      if (drillData.completed) {
-        completedCount++;
-      }
-    });
-
-    const progress = totalCount > 0 ? completedCount / totalCount : 0;
-
-    // Update athlete's progress
-    await athleteRef.update({
-      progress: progress,
-      completedDrills: completedCount,
-      totalDrills: totalCount
-    });
-
-    console.log(`Updated progress for athlete ${athleteId}: ${Math.round(progress * 100)}%`);
-  } catch (error) {
-    console.error('Error updating athlete progress:', error);
-    throw error;
-  }
+  await athleteRef.update({
+    progress,
+    completedDrills: completedCount,
+    totalDrills: totalCount
+  });
 }
 
-/**
- * Notify coach when an athlete completes a drill
- */
-async function notifyCoachOfCompletion(athleteId: string, drillId: string): Promise<void> {
-  try {
-    // Get athlete and coach info
-    const athleteDoc = await db.collection('athletes').doc(athleteId).get();
-    if (!athleteDoc.exists) return;
-
-    const athleteData = athleteDoc.data()!;
-    const coachId = athleteData.coachId;
-
-    if (coachId) {
-      console.log(`Notifying coach ${coachId} about drill ${drillId} completion by athlete ${athleteId}`);
-
-      // Add notification to Firestore for the coach
-      await db.collection('notifications').add({
-        userId: coachId,
-        type: 'drill_completion',
-        message: `Athlete ${athleteData.name || 'Unknown Athlete'} has completed a drill`,
-        drillId: drillId,
-        athleteId: athleteId,
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
-        read: false
-      });
-    }
-  } catch (error) {
-    console.error('Error notifying coach:', error);
-    throw error;
-  }
-}
-
-/**
- * Send notification to a user
- */
 async function sendNotification(userId: string, message: string, type: string): Promise<void> {
-  try {
-    await db.collection('notifications').add({
-      userId: userId,
-      type: type,
-      message: message,
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
-      read: false
-    });
-
-    console.log(`Notification sent to user ${userId}: ${message}`);
-  } catch (error) {
-    console.error('Error sending notification:', error);
-    throw error;
-  }
-}
-
-/**
- * Send notification to an athlete's coach
- */
-async function sendNotificationToCoach(athleteId: string, message: string, type: string): Promise<void> {
-  try {
-    const athleteDoc = await db.collection('athletes').doc(athleteId).get();
-    if (!athleteDoc.exists) return;
-
-    const athleteData = athleteDoc.data()!;
-    const coachId = athleteData.coachId;
-
-    if (coachId) {
-      await db.collection('notifications').add({
-        userId: coachId,
-        type: type,
-        message: message,
-        athleteId: athleteId,
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
-        read: false
-      });
-
-      console.log(`Notification sent to coach ${coachId}: ${message}`);
-    }
-  } catch (error) {
-    console.error('Error sending notification to coach:', error);
-    throw error;
-  }
+  await db.collection('notifications').add({
+    userId,
+    type,
+    message,
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    read: false
+  });
 }

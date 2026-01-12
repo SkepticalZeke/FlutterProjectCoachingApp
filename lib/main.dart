@@ -4,6 +4,7 @@ import 'firebase_options.dart'; // ⭐️ MOVED TO lib/ ⭐️
 
 // --- Screen Imports Updated to new MVVM structure ---
 import 'src/features/0_auth/view/splash_view.dart';
+import 'src/features/0_auth/view/role_selection_view.dart';
 import 'src/features/0_auth/view/athlete_login_view.dart';
 import 'src/features/2_athlete_flow/view/athlete_dashboard_view.dart';
 import 'src/features/0_auth/view/coach_login_view.dart';
@@ -110,6 +111,7 @@ class CoachFitnessApp extends StatelessWidget {
       routes: {
         // General Flow (from 0_auth)
         '/': (context) => const SplashView(),
+        '/role-selection': (context) => const RoleSelectionView(),
         '/login': (context) => const AthleteLoginView(),
 
         // Coach Flow (from 0_auth and 1_coach_flow)

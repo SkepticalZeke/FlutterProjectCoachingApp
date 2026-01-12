@@ -136,12 +136,11 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
         },
       ),
       // 4. FAB is unchanged
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.of(context).pushNamed('/create-drill');
-        },
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showAddMenu(context),
         backgroundColor: theme.colorScheme.primary,
-        child: Icon(Icons.add, color: theme.colorScheme.onPrimary),
+        icon: const Icon(Icons.add),
+        label: const Text('Actions'),
       ),
     );
   }
@@ -238,6 +237,137 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
             arguments: dataToPass,
           );
         },
+      ),
+    );
+  }
+
+  void _showAddMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Coach Actions',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              
+              // Option 1: Add Custom Drill
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Colors.blue,
+                  child: Icon(Icons.video_library, color: Colors.white),
+                ),
+                title: const Text('Create New Drill'),
+                subtitle: const Text('Upload a video and set XP'),
+                onTap: () {
+                  Navigator.pop(ctx); // Close sheet
+                  Navigator.of(context).pushNamed('/create-drill');
+                },
+              ),
+
+              // Option 2: Add New Athlete
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Colors.green,
+                  child: Icon(Icons.person_add, color: Colors.white),
+                ),
+                title: const Text('Add New Athlete'),
+                subtitle: const Text('Create a profile for a new player'),
+                onTap: () {
+                  Navigator.pop(ctx); // Close sheet
+                  _showAddAthleteDialog();
+                },
+              ),
+
+              // Option 3: Mass Assign (Placeholder for now)
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Colors.orange,
+                  child: Icon(Icons.playlist_add_check, color: Colors.white),
+                ),
+                title: const Text('Mass Assign Drill'),
+                subtitle: const Text('Assign a drill to multiple athletes'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  // For now, we show a SnackBar. 
+                  // To implement fully, you'd need a multi-select screen.
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Mass Assign Coming Soon!')),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAddAthleteDialog() {
+    final nameController = TextEditingController();
+    final pinController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add New Athlete'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Athlete Name'),
+              textCapitalization: TextCapitalization.words,
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: pinController,
+              decoration: const InputDecoration(labelText: '4-Digit PIN'),
+              keyboardType: TextInputType.number,
+              maxLength: 4,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameController.text.isNotEmpty &&
+                  pinController.text.length == 4) {
+                Navigator.pop(ctx); // Close dialog
+                
+                // Call ViewModel
+                final success = await _viewModel.addNewAthlete(
+                  nameController.text.trim(),
+                  pinController.text.trim(),
+                );
+
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(success
+                          ? 'Athlete added successfully!'
+                          : 'Failed to add athlete.'),
+                      backgroundColor: success ? Colors.green : Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
       ),
     );
   }

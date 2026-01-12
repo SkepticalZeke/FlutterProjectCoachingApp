@@ -414,4 +414,34 @@ class DatabaseRepository {
       await _firestore.collection('athletes').doc(athleteId).update(updates);
     }
   }
+
+  Future<void> addNewAthlete({
+    required String coachUid,
+    required String name,
+    required String pin,
+  }) async {
+    final athleteRef = _firestore.collection('athletes').doc();
+    
+    // Create the athlete document with default stats
+    await athleteRef.set({
+      'name': name,
+      'pin': pin,
+      'coachUid': coachUid,
+      'level': 1,
+      'streak': 0,
+      'progress': 0.0,
+      'status': 'Training Not Started',
+      'skill_focus': 'General',
+      'difficulty': 'Easy',
+      'stars': 0,
+      'unlockedItems': [101, 201, 301],
+      'selectedOutfit': 101,
+      'selectedShoe': 201,
+      'selectedEquipment': 301,
+      'currentXp': 0.0,
+      'requiredXp': 1000.0,
+      'totalXp': 0,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
 }

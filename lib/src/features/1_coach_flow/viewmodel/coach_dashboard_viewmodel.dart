@@ -53,7 +53,10 @@ class CoachDashboardViewModel extends ChangeNotifier {
         name: name,
         pin: pin,
       );
-      _setProcessing(false);
+      
+      // Refresh the athlete list
+      await fetchAthletes();
+      
       return true;
     } catch (e) {
       debugPrint("Error adding athlete: $e");

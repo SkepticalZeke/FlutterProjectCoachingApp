@@ -183,10 +183,9 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
 
   // 5. Helper widgets are now part of the View
   Widget _buildOverviewCard(
-      BuildContext context, List<QueryDocumentSnapshot> athletes) {
-    final completedCount = athletes.where((doc) {
-      final data = doc.data() as Map<String, dynamic>;
-      return data.containsKey('progress') && data['progress'] == 1.0;
+      BuildContext context, List<Map<String, dynamic>> athletes) {
+    final completedCount = athletes.where((athlete) {
+      return athlete.containsKey('progress') && athlete['progress'] == 1.0;
     }).length;
     final totalCount = athletes.length;
     final theme = Theme.of(context);
@@ -228,8 +227,7 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
   }
 
   Widget _buildAthleteTile(
-      BuildContext context, QueryDocumentSnapshot athleteDoc) {
-    final athleteData = athleteDoc.data() as Map<String, dynamic>;
+      BuildContext context, Map<String, dynamic> athleteData) {
     final bool isComplete = (athleteData['progress'] ?? 0.0) == 1.0;
 
     return Card(
@@ -244,7 +242,7 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
           ),
         ),
         title: Text(
-          athleteData['name'] as String,
+          athleteData['name'] as String? ?? 'Unknown',
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         subtitle: Column(
@@ -252,25 +250,21 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
           children: [
             const SizedBox(height: 4),
             Text(
-              'Status: ${athleteData['status']}',
+              'Status: ${athleteData['status'] ?? 'Unknown'}',
               style: TextStyle(
                   color: isComplete ? Colors.green[400] : Colors.red[400]),
             ),
-            Text('Current Streak: ${athleteData['streak']} days'),
-            Text('Level: ${athleteData['level']}'),
+            Text('Current Streak: ${athleteData['streak'] ?? 0} days'),
+            Text('Level: ${athleteData['level'] ?? 1}'),
           ],
         ),
         trailing: Icon(Icons.chevron_right,
             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
         onTap: () {
           // 6. Navigation is handled by the View
-          Map<String, dynamic> dataToPass =
-              athleteDoc.data() as Map<String, dynamic>;
-          dataToPass['id'] = athleteDoc.id; // Add the document ID
-
           Navigator.of(context).pushNamed(
             '/coach-athlete-detail',
-            arguments: dataToPass,
+            arguments: athleteData,
           );
         },
       ),

@@ -3,23 +3,32 @@
   "description": "Cloud Functions for CoachFitness Firebase project",
   "scripts": {
     "build": "tsc",
-    "serve": "npm run build && firebase emulators:start --only functions",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions,firestore",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "deploy:prod": "firebase deploy --only functions --project fitness-coaching-app-5633f",
+    "logs": "firebase functions:log",
+    "lint": "eslint src/**/*.ts"
   },
   "engines": {
-    "node": "18"
+    "node": "22"
   },
   "main": "lib/index.js",
   "dependencies": {
-    "firebase-admin": "^11.8.0",
-    "firebase-functions": "^4.3.1"
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.0",
+    "express": "^4.18.2",
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^4.9.0"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.0",
     "firebase-functions-test": "^3.4.1",
-    "typescript": "^4.9.0"
+    "typescript": "^5.3.0"
   },
   "private": true
 }

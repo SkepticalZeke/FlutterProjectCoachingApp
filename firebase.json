@@ -1,6 +1,8 @@
 {
   "functions": {
-    "source": "functions"
+    "source": "functions",
+    "runtime": "nodejs22",
+    "region": "asia-southeast1"
   },
   "emulators": {
     "functions": {
@@ -9,8 +11,12 @@
     "firestore": {
       "port": 8080
     },
+    "auth": {
+      "port": 9099
+    },
     "ui": {
-      "enabled": true
+      "enabled": true,
+      "port": 4000
     }
   }
 }

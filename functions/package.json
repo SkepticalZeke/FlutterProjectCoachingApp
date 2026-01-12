@@ -1,25 +1,27 @@
 {
   "name": "coachfitness-functions",
-  "description": "Cloud Functions for CoachFitness Firebase project",
+  "description": "Cloud Functions for CoachFitness Firebase project - Microservices Architecture",
   "scripts": {
     "build": "tsc",
-    "serve": "npm run build && firebase emulators:start --only functions",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions,firestore,auth",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
-    "deploy": "firebase deploy --only functions",
+    "deploy": "firebase deploy --only functions --project fitness-coaching-app-5633f",
     "logs": "firebase functions:log"
   },
   "engines": {
-    "node": "18"
+    "node": "22"
   },
   "main": "lib/index.js",
   "dependencies": {
-    "firebase-admin": "^11.8.0",
-    "firebase-functions": "^4.3.1"
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^5.1.0"
   },
   "devDependencies": {
+    "@types/node": "^20.11.0",
     "firebase-functions-test": "^3.4.1",
-    "typescript": "^4.9.0"
+    "typescript": "^5.3.0"
   },
   "private": true
 }

@@ -18,10 +18,12 @@ dependencies:
   firebase_auth: ^4.19.0
   cloud_firestore: ^4.17.0
   firebase_storage: ^11.7.0 # ⭐️ ADDED for file uploads
+  cloud_functions: ^4.7.0 # ⭐️ ADDED for Cloud Functions integration
 
   # --- UTILITY PACKAGES ---
   image_picker: ^1.1.2 # ⭐️ ADDED for picking videos/images
   video_player: ^2.8.6 # ⭐️ ADDED for playing videos
+  lottie: ^3.1.2 # ⭐️ ADDED for Lottie animations
 
   # For iOS style icons
   cupertino_icons: ^1.0.2

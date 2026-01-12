@@ -65,6 +65,22 @@ export {
 } from './functions/notifications';
 
 // =============================================================================
+// App-Specific Functions (Gen 2 Callable)
+// =============================================================================
+
+export {
+  createCoachProfile,
+  addAthlete,
+  createCoachDrill,
+  assignDrill,
+  completeDrill,
+  submitReview,
+  updateAthleteDetails,
+  addRestDay,
+  updateAthleteProfile
+} from './functions/app-specific';
+
+// =============================================================================
 // Firestore Triggers (Gen 2)
 // =============================================================================
 

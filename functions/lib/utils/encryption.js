@@ -24,30 +24,15 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.SENSITIVE_FIELDS = void 0;
-exports.encrypt = encrypt;
-exports.decrypt = decrypt;
-exports.encryptFields = encryptFields;
-exports.decryptFields = decryptFields;
-exports.generateEncryptionKey = generateEncryptionKey;
+exports.generateEncryptionKey = exports.SENSITIVE_FIELDS = exports.decryptFields = exports.encryptFields = exports.decrypt = exports.encrypt = void 0;
 const crypto = __importStar(require("crypto"));
 const config_1 = require("../config");
 // Encryption constants
@@ -79,6 +64,7 @@ function encrypt(plaintext) {
     const combined = Buffer.concat([iv, authTag, encrypted]);
     return combined.toString('base64');
 }
+exports.encrypt = encrypt;
 /**
  * Decrypt a ciphertext string using AES-256-GCM
  * @param ciphertext Base64 encoded string from encrypt()
@@ -105,6 +91,7 @@ function decrypt(ciphertext) {
     ]);
     return decrypted.toString('utf8');
 }
+exports.decrypt = decrypt;
 /**
  * Encrypt specific fields in an object
  * @param data Object containing data to encrypt
@@ -121,6 +108,7 @@ function encryptFields(data, fieldsToEncrypt) {
     }
     return result;
 }
+exports.encryptFields = encryptFields;
 /**
  * Decrypt specific fields in an object
  * @param data Object containing encrypted data
@@ -143,6 +131,7 @@ function decryptFields(data, fieldsToDecrypt) {
     }
     return result;
 }
+exports.decryptFields = decryptFields;
 /**
  * List of sensitive fields that should be encrypted
  * These fields will be encrypted before storing in Firestore
@@ -159,4 +148,5 @@ exports.SENSITIVE_FIELDS = {
 function generateEncryptionKey() {
     return crypto.randomBytes(32).toString('hex');
 }
+exports.generateEncryptionKey = generateEncryptionKey;
 //# sourceMappingURL=encryption.js.map

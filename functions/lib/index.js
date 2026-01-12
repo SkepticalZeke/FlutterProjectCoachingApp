@@ -26,25 +26,15 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkAthleteProgress = exports.onAthleteUpdate = exports.onDrillUpdate = exports.clearNotifications = exports.markAllNotificationsRead = exports.markNotificationRead = exports.getNotifications = exports.reviewDrill = exports.submitDrill = exports.createDrill = exports.getDrill = exports.getDrills = exports.updateCoach = exports.createCoach = exports.getCoach = exports.getCoaches = exports.deleteAthlete = exports.updateAthlete = exports.createAthlete = exports.getAthlete = exports.getAthletes = void 0;
+exports.checkAthleteProgress = exports.onAthleteUpdate = exports.onDrillUpdate = exports.updateAthleteProfile = exports.addRestDay = exports.updateAthleteDetails = exports.submitReview = exports.completeDrill = exports.assignDrill = exports.createCoachDrill = exports.addAthlete = exports.createCoachProfile = exports.clearNotifications = exports.markAllNotificationsRead = exports.markNotificationRead = exports.getNotifications = exports.reviewDrill = exports.submitDrill = exports.createDrill = exports.getDrill = exports.getDrills = exports.updateCoach = exports.createCoach = exports.getCoach = exports.getCoaches = exports.deleteAthlete = exports.updateAthlete = exports.createAthlete = exports.getAthlete = exports.getAthletes = void 0;
 // Gen 2 imports
 const firestore_1 = require("firebase-functions/v2/firestore");
 const scheduler_1 = require("firebase-functions/v2/scheduler");
@@ -85,6 +75,19 @@ Object.defineProperty(exports, "getNotifications", { enumerable: true, get: func
 Object.defineProperty(exports, "markNotificationRead", { enumerable: true, get: function () { return notifications_1.markNotificationRead; } });
 Object.defineProperty(exports, "markAllNotificationsRead", { enumerable: true, get: function () { return notifications_1.markAllNotificationsRead; } });
 Object.defineProperty(exports, "clearNotifications", { enumerable: true, get: function () { return notifications_1.clearNotifications; } });
+// =============================================================================
+// App-Specific Functions (Gen 2 Callable)
+// =============================================================================
+var app_specific_1 = require("./functions/app-specific");
+Object.defineProperty(exports, "createCoachProfile", { enumerable: true, get: function () { return app_specific_1.createCoachProfile; } });
+Object.defineProperty(exports, "addAthlete", { enumerable: true, get: function () { return app_specific_1.addAthlete; } });
+Object.defineProperty(exports, "createCoachDrill", { enumerable: true, get: function () { return app_specific_1.createCoachDrill; } });
+Object.defineProperty(exports, "assignDrill", { enumerable: true, get: function () { return app_specific_1.assignDrill; } });
+Object.defineProperty(exports, "completeDrill", { enumerable: true, get: function () { return app_specific_1.completeDrill; } });
+Object.defineProperty(exports, "submitReview", { enumerable: true, get: function () { return app_specific_1.submitReview; } });
+Object.defineProperty(exports, "updateAthleteDetails", { enumerable: true, get: function () { return app_specific_1.updateAthleteDetails; } });
+Object.defineProperty(exports, "addRestDay", { enumerable: true, get: function () { return app_specific_1.addRestDay; } });
+Object.defineProperty(exports, "updateAthleteProfile", { enumerable: true, get: function () { return app_specific_1.updateAthleteProfile; } });
 // =============================================================================
 // Firestore Triggers (Gen 2)
 // =============================================================================

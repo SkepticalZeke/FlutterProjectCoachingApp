@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "150046979522",
+    "project_id": "fitness-coaching-app-5633f",
+    "storage_bucket": "fitness-coaching-app-5633f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:150046979522:android:cd190498f42b8aa4d7925b",
+        "android_client_info": {
+          "package_name": "com.example.goalbuddysapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC9ZzX_-UJsBXDd_gqc-GT5xUfNsYMPubk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

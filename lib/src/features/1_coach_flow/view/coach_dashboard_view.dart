@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 // Import the new ViewModel
 import '../viewmodel/coach_dashboard_viewmodel.dart';
 
@@ -17,6 +16,16 @@ class CoachDashboardView extends StatefulWidget {
 class _CoachDashboardViewState extends State<CoachDashboardView> {
   // 1. The View owns its ViewModel
   final _viewModel = CoachDashboardViewModel();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAthletes();
+  }
+
+  Future<void> _loadAthletes() async {
+    await _viewModel.fetchAthletes();
+  }
 
   // 2. The View handles the logout logic (calling the ViewModel)
   void _handleLogout() async {
@@ -60,25 +69,51 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
             },
           ),
           IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Navigator.of(context).pushNamed('/coach-profile');
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: _handleLogout, // Call our new handler
+            onPressed: _handleLogout,
           ),
         ],
       ),
-      // 3. The body is now a StreamBuilder listening to the ViewModel
-      body: StreamBuilder<QuerySnapshot>(
-        stream: _viewModel.athletesStream,
-        builder: (context, snapshot) {
+      // 3. The body uses ListenableBuilder to listen to ViewModel changes
+      body: ListenableBuilder(
+        listenable: _viewModel,
+        builder: (context, _) {
           // Handle Loading State
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (_viewModel.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
+
           // Handle Error State
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+          if (_viewModel.errorMessage != null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error: ${_viewModel.errorMessage}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadAthletes,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
           }
+
           // Handle No Data State
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          if (_viewModel.athletes.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -89,7 +124,7 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
                   const SizedBox(height: 10),
                   const Text('No athletes found.'),
                   Text(
-                    'Add your first athlete from the Registration screen.',
+                    'Add your first athlete using the + button below.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
@@ -99,38 +134,39 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
             );
           }
 
-          // We have data! Get the list of athlete documents
-          final athleteDocs = snapshot.data!.docs;
-
-          // Build the UI with the real data
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Welcome, Coach!',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 24,
-                    color: theme.colorScheme.primary,
+          // We have data! Build the UI
+          return RefreshIndicator(
+            onRefresh: _loadAthletes,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Welcome, Coach!',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                // Pass the real athlete list to the overview card
-                _buildOverviewCard(context, athleteDocs),
-                const SizedBox(height: 30),
-                Text(
-                  'Athletes Overview',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
+                  const SizedBox(height: 20),
+                  // Pass the real athlete list to the overview card
+                  _buildOverviewCard(context, _viewModel.athletes),
+                  const SizedBox(height: 30),
+                  Text(
+                    'Athletes Overview',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                // Map the real documents to the tile widget
-                ...athleteDocs.map((doc) => _buildAthleteTile(context, doc)),
-              ],
+                  const SizedBox(height: 10),
+                  // Map the athlete data to the tile widget
+                  ..._viewModel.athletes.map((athlete) => _buildAthleteTile(context, athlete)),
+                ],
+              ),
             ),
           );
         },

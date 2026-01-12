@@ -158,13 +158,28 @@ class _CoachLoginViewState extends State<CoachLoginView> {
                         ),
                 ),
                 const SizedBox(height: 20),
-                TextButton(
-                  onPressed: _viewModel.isLoading ? null : () {
-                    // Placeholder for "Join Code" feature
-                  },
-                  child: const Text(
-                    'Have an Athlete Join Code?',
+                OutlinedButton(
+                  onPressed: _viewModel.isLoading
+                      ? null
+                      : () {
+                          Navigator.of(context).pushNamed('/coach-registration');
+                        },
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    side: BorderSide(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.7)),
+                    foregroundColor: theme.colorScheme.primary,
                   ),
+                  child: const Text('New Coach? Sign Up Here'),
+                ),
+                const SizedBox(height: 20),
+                TextButton(
+                  onPressed: _viewModel.isLoading
+                      ? null
+                      : () {
+                          Navigator.of(context).pop();
+                        },
+                  child: const Text('Back to Role Selection'),
                 ),
               ],
             ),

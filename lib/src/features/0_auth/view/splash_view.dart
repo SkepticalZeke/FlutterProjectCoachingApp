@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lottie/lottie.dart';
 // Import the new ViewModel
 import '../viewmodel/splash_viewmodel.dart';
 
@@ -17,23 +18,38 @@ class SplashView extends StatefulWidget {
 
 class _SplashViewState extends State<SplashView> {
   final _viewModel = SplashViewModel();
-  
+
   // Flag to ensure navigation happens only once
   bool _hasNavigated = false;
+  // Track when the splash screen started
+  DateTime? _splashStartTime;
 
   @override
   void initState() {
     super.initState();
+    _splashStartTime = DateTime.now();
+
     // 1. Listen for the *first* authentication state change
-    _viewModel.authStateChanges.listen((User? user) {
+    _viewModel.authStateChanges.listen((User? user) async {
       // 2. Only navigate if the widget is mounted and we haven't gone anywhere
       if (mounted && !_hasNavigated) {
         _hasNavigated = true;
-        // 3. Get the correct route from the ViewModel
+
+        // 3. Calculate remaining time to show splash (minimum 5 seconds)
+        final elapsedTime = DateTime.now().difference(_splashStartTime!);
+        const minSplashDuration = Duration(seconds: 5);
+
+        if (elapsedTime < minSplashDuration) {
+          await Future.delayed(minSplashDuration - elapsedTime);
+        }
+
+        // 4. Get the correct route from the ViewModel
         final route = _viewModel.getInitialRoute(user);
-        
-        // 4. Navigate and clear the navigation stack
-        Navigator.of(context).pushReplacementNamed(route);
+
+        // 5. Navigate and clear the navigation stack
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed(route);
+        }
       }
     });
   }
@@ -55,10 +71,12 @@ class _SplashViewState extends State<SplashView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.sports_tennis,
-              size: 100,
-              color: theme.colorScheme.primary,
+            // Lottie Animation
+            Lottie.network(
+              'https://lottie.host/1f8628ae-3cec-43be-b8d9-ac2835479081/xMZnA2zc9O.json',
+              width: 250,
+              height: 250,
+              fit: BoxFit.contain,
             ),
             const SizedBox(height: 20),
             Text(

@@ -6,9 +6,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.requireAuth = requireAuth;
-exports.getUserRole = getUserRole;
-exports.requireRole = requireRole;
+exports.requireRole = exports.getUserRole = exports.requireAuth = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const firebase_1 = __importDefault(require("./firebase"));
 /**
@@ -20,6 +18,7 @@ function requireAuth(auth) {
     }
     return auth.uid;
 }
+exports.requireAuth = requireAuth;
 /**
  * Get user role from Firestore
  */
@@ -28,6 +27,7 @@ async function getUserRole(uid) {
     const userDoc = await db.collection('users').doc(uid).get();
     return userDoc.exists ? userDoc.data()?.role || null : null;
 }
+exports.getUserRole = getUserRole;
 /**
  * Require specific role(s)
  */
@@ -38,4 +38,5 @@ async function requireRole(uid, allowedRoles) {
     }
     return role;
 }
+exports.requireRole = requireRole;
 //# sourceMappingURL=shared.js.map

@@ -4,8 +4,7 @@
  * Uses Firebase Secrets for sensitive data (no .env files needed)
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.config = exports.encryptionKeySecret = void 0;
-exports.getEncryptionKey = getEncryptionKey;
+exports.getEncryptionKey = exports.config = exports.encryptionKeySecret = void 0;
 const params_1 = require("firebase-functions/params");
 // =============================================================================
 // Firebase Secrets (stored in Google Secret Manager)
@@ -37,5 +36,6 @@ function getEncryptionKey() {
     }
     return key;
 }
+exports.getEncryptionKey = getEncryptionKey;
 exports.default = exports.config;
 //# sourceMappingURL=index.js.map

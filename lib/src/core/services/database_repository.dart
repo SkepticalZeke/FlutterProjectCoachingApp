@@ -1,19 +1,32 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // We need auth to get the UID
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/athlete.dart';
+import 'cloud_functions_service.dart';
 
 /*
   MODEL (M)
-  This is the Database Repository. Its only job is to talk to
-  Firestore. It's "dumb" and just does what it's told.
+  This is the Database Repository - Hybrid Architecture
+
+  Uses Cloud Functions for:
+  - All mutations (create, update, delete)
+  - All write operations that require validation
+
+  Uses direct Firestore for:
+  - Real-time streams (snapshots)
+  - Read operations that need instant updates
+
+  This approach combines:
+  - Security & validation from Cloud Functions
+  - Real-time updates from Firestore streams
 */
 class DatabaseRepository {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final CloudFunctionsService _functions = CloudFunctionsService();
 
   String? get _coachUid => _auth.currentUser?.uid;
 
-  // Creates the coach doc and their first athlete doc in one batch
+  // Creates the coach doc and their first athlete doc using Cloud Functions
   Future<void> createCoachAndFirstAthlete({
     required String coachUid,
     required String coachEmail,
@@ -21,50 +34,18 @@ class DatabaseRepository {
     required String athletePin,
   }) async {
     try {
-      WriteBatch batch = _firestore.batch();
+      // Create coach profile via Cloud Function
+      await _functions.createCoachProfile(
+        uid: coachUid,
+        email: coachEmail,
+      );
 
-      // 1. Create the Coach Document in 'coaches' collection
-      DocumentReference coachRef =
-          _firestore.collection('coaches').doc(coachUid);
-      batch.set(coachRef, {
-        'uid': coachUid,
-        'email': coachEmail,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      // 2. Create the first Athlete Document in 'athletes' collection
-      DocumentReference athleteRef = _firestore.collection('athletes').doc();
-      batch.set(athleteRef, {
-        'name': athleteName,
-        'pin': athletePin,
-        'coachUid': coachUid, // This links the athlete to the coach
-        'level': 1,
-        'streak': 0,
-        'progress': 0.0,
-        'status': 'Training Not Started',
-        'skill_focus': 'General',
-        'difficulty': 'Easy',
-        'createdAt': FieldValue.serverTimestamp(),
-        'stars': 0,
-        'unlockedItems': [101, 201, 301], // Default unlocked items
-        'selectedOutfit': 101,
-        'selectedShoe': 201,
-        'selectedEquipment': 301,
-        'currentXp': 0.0,
-        'requiredXp': 1000.0,
-        'totalXp': 0,
-        'skillProgress': {
-          'General': 0.0,
-          'Agility': 0.0,
-          'Strength': 0.0,
-          'Cardio': 0.0,
-        },
-      });
-
-      // Commit both writes at the same time
-      await batch.commit();
+      // Create first athlete via Cloud Function
+      await _functions.addAthlete(
+        name: athleteName,
+        pin: athletePin,
+      );
     } catch (e) {
-      // Re-throw to be handled by ViewModel
       rethrow;
     }
   }
@@ -136,31 +117,23 @@ class DatabaseRepository {
         .snapshots();
   }
 
-  // Updates an athlete's details (difficulty, focus, notes)
+  // Updates an athlete's details via Cloud Function
   Future<void> updateAthleteDetails(String athleteId, String difficulty,
       String skillFocus, String notes) async {
-    DocumentReference athleteRef =
-        _firestore.collection('athletes').doc(athleteId);
-    await athleteRef.update({
-      'difficulty': difficulty,
-      'skill_focus': skillFocus,
-      'notes': notes,
-    });
+    await _functions.updateAthleteDetails(
+      athleteId: athleteId,
+      difficulty: difficulty,
+      skillFocus: skillFocus,
+      notes: notes,
+    );
   }
-  
-  
 
-  // Sets an athlete's status to a rest day
+  // Sets an athlete's status to a rest day via Cloud Function
   Future<void> addRestDay(String athleteId) async {
-    DocumentReference athleteRef =
-        _firestore.collection('athletes').doc(athleteId);
-    await athleteRef.update({
-      'status': 'Rest Day (Completed)',
-      'progress': 1.0,
-    });
+    await _functions.addRestDay(athleteId);
   }
 
-  // Creates a new drill for a coach
+  // Creates a new drill for a coach via Cloud Function
   Future<void> createCoachDrill({
     required String name,
     required String goal,
@@ -169,18 +142,13 @@ class DatabaseRepository {
     required String videoUrl,
   }) async {
     if (_coachUid == null) throw Exception('No coach logged in');
-    await _firestore
-        .collection('coaches')
-        .doc(_coachUid)
-        .collection('drills')
-        .add({
-      'name': name,
-      'goal': goal,
-      'skillFocus': skillFocus,
-      'xp': xp,
-      'videoUrl': videoUrl,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    await _functions.createCoachDrill(
+      name: name,
+      goal: goal,
+      skillFocus: skillFocus,
+      xp: xp,
+      videoUrl: videoUrl,
+    );
   }
 
   // Gets a stream of all drills created by the current coach
@@ -204,34 +172,19 @@ class DatabaseRepository {
         .snapshots();
   }
 
-  // Assigns a drill to an athlete
+  // Assigns a drill to an athlete via Cloud Function
   Future<void> assignDrillToAthlete({
     required String athleteId,
     required Map<String, dynamic> drillData,
   }) async {
     if (_coachUid == null) throw Exception('No coach logged in');
-
-    final athleteDrillsRef = _firestore
-        .collection('athletes')
-        .doc(athleteId)
-        .collection('todayDrills');
-
-    await athleteDrillsRef.add({
-      'name': drillData['name'],
-      'goal': drillData['goal'],
-      'skillFocus': drillData['skillFocus'],
-      'xp': drillData['xp'],
-      'videoUrl': drillData['videoUrl'],
-      'coachDrillId': drillData['id'], // Link to the original drill
-      'coachUid': _coachUid, // ⭐️ NEW: For querying
-      'athleteId': athleteId, // ⭐️ NEW: For querying
-      'assignedAt': FieldValue.serverTimestamp(),
-      'completed': false,
-      'iconData': 0xe722, // video_library
-    });
+    await _functions.assignDrill(
+      athleteId: athleteId,
+      drillData: drillData,
+    );
   }
 
-  // Marks a drill as complete
+  // Marks a drill as complete via Cloud Function
   Future<void> completeDrill({
     required String athleteId,
     required String drillId,
@@ -239,84 +192,32 @@ class DatabaseRepository {
     required int xpGained,
     required String coachVideoUrl,
     required String athleteVideoUrl,
-    required String coachUid, // ⭐️ Pass this in
+    required String coachUid,
   }) async {
-    final athleteRef = _firestore.collection('athletes').doc(athleteId);
-    final drillRef = athleteRef.collection('todayDrills').doc(drillId);
-    final logRef = athleteRef.collection('logs').doc();
-
-    DocumentSnapshot athleteDoc = await athleteRef.get();
-    if (!athleteDoc.exists) throw Exception("Athlete document not found");
-
-    final athleteData = athleteDoc.data() as Map<String, dynamic>;
-    final String skillFocus = athleteData['skill_focus'] ?? 'General';
-    final String skillProgressField = 'skillProgress.$skillFocus';
-
-    WriteBatch batch = _firestore.batch();
-
-    batch.update(drillRef, {
-      'completed': true,
-      'status': 'Pending Review',
-      'athleteVideoUrl': athleteVideoUrl,
-    });
-
-    batch.set(logRef, {
-      'drill': drillName,
-      'status': 'Pending Review',
-      'xp': xpGained,
-      'date': FieldValue.serverTimestamp(),
-      'skillFocus': skillFocus,
-      'coachVideoUrl': coachVideoUrl,
-      'athleteVideoUrl': athleteVideoUrl,
-      'coachUid': coachUid, // ⭐️ NEW: For notifications
-      'athleteId': athleteId, // ⭐️ NEW: For notifications
-    });
-
-    batch.update(athleteRef, {
-      'totalXp': FieldValue.increment(xpGained),
-      'currentXp': FieldValue.increment(xpGained),
-      skillProgressField: FieldValue.increment(xpGained),
-    });
-
-    await batch.commit();
+    await _functions.completeDrill(
+      athleteId: athleteId,
+      drillId: drillId,
+      drillName: drillName,
+      xpGained: xpGained,
+      coachVideoUrl: coachVideoUrl,
+      athleteVideoUrl: athleteVideoUrl,
+      coachUid: coachUid,
+    );
   }
 
-  // Submits a review for a drill
+  // Submits a review for a drill via Cloud Function
   Future<void> submitReview({
     required String athleteId,
     required String logId,
     required bool isApproved,
     required String feedback,
   }) async {
-    final newStatus = isApproved ? 'Approved' : 'Needs Work';
-    final bonusXp = isApproved ? 25 : 0;
-
-    final logRef = _firestore
-        .collection('athletes')
-        .doc(athleteId)
-        .collection('logs')
-        .doc(logId);
-    final athleteRef = _firestore.collection('athletes').doc(athleteId);
-
-    WriteBatch batch = _firestore.batch();
-
-    batch.update(logRef, {
-      'status': newStatus,
-      'feedback': feedback,
-    });
-
-    if (isApproved) {
-      batch.update(athleteRef, {
-        'totalXp': FieldValue.increment(bonusXp),
-        'currentXp': FieldValue.increment(bonusXp),
-        'stars': FieldValue.increment(10), // Reward 10 stars
-      });
-    }
-
-    // We also need to find the original drill in 'todayDrills' and update its status
-    // For simplicity, we'll leave this for now, but in a real app, you'd link them.
-
-    await batch.commit();
+    await _functions.submitReview(
+      athleteId: athleteId,
+      logId: logId,
+      isApproved: isApproved,
+      feedback: feedback,
+    );
   }
 
   // Registers a new athlete with the coach
@@ -396,52 +297,28 @@ class DatabaseRepository {
   }
 
 
+  // Update athlete profile via Cloud Function
   Future<void> updateAthleteProfile({
     required String athleteId,
     String? newName,
     String? newPin,
   }) async {
-    final Map<String, dynamic> updates = {};
-
-    if (newName != null && newName.isNotEmpty) {
-      updates['name'] = newName;
-    }
-    if (newPin != null && newPin.isNotEmpty) {
-      updates['pin'] = newPin;
-    }
-
-    if (updates.isNotEmpty) {
-      await _firestore.collection('athletes').doc(athleteId).update(updates);
-    }
+    await _functions.updateAthleteProfile(
+      athleteId: athleteId,
+      newName: newName,
+      newPin: newPin,
+    );
   }
 
+  // Add new athlete via Cloud Function
   Future<void> addNewAthlete({
     required String coachUid,
     required String name,
     required String pin,
   }) async {
-    final athleteRef = _firestore.collection('athletes').doc();
-    
-    // Create the athlete document with default stats
-    await athleteRef.set({
-      'name': name,
-      'pin': pin,
-      'coachUid': coachUid,
-      'level': 1,
-      'streak': 0,
-      'progress': 0.0,
-      'status': 'Training Not Started',
-      'skill_focus': 'General',
-      'difficulty': 'Easy',
-      'stars': 0,
-      'unlockedItems': [101, 201, 301],
-      'selectedOutfit': 101,
-      'selectedShoe': 201,
-      'selectedEquipment': 301,
-      'currentXp': 0.0,
-      'requiredXp': 1000.0,
-      'totalXp': 0,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    await _functions.addAthlete(
+      name: name,
+      pin: pin,
+    );
   }
 }

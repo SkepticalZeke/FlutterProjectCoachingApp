@@ -1,23 +1,46 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 // Import our Models
 import '../../../core/services/auth_repository.dart';
 import '../../../core/services/database_repository.dart';
+import '../../../core/services/cloud_functions_service.dart';
 
 class CoachDashboardViewModel extends ChangeNotifier {
   final AuthRepository _authRepo = AuthRepository();
   final DatabaseRepository _dbRepo = DatabaseRepository();
+  final CloudFunctionsService _functions = CloudFunctionsService();
 
   String? get coachUid => _authRepo.currentUser?.uid;
+
+  // State for athletes data
+  List<Map<String, dynamic>> _athletes = [];
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  List<Map<String, dynamic>> get athletes => _athletes;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
 
   // State for loading indicators during add actions
   bool _isProcessing = false;
   bool get isProcessing => _isProcessing;
 
-  Stream<QuerySnapshot> get athletesStream {
-    if (coachUid == null) return const Stream.empty();
-    return _dbRepo.getAthletesStream(coachUid!);
+  /// Fetch athletes using Cloud Functions
+  Future<void> fetchAthletes() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      _athletes = await _functions.getAthletes();
+      _errorMessage = null;
+    } catch (e) {
+      _errorMessage = e.toString();
+      _athletes = [];
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   // --- Logic: Add New Athlete ---

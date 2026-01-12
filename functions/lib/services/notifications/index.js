@@ -38,10 +38,9 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const admin = __importStar(require("firebase-admin"));
+const firebase_1 = __importStar(require("../../firebase"));
 const auth_1 = require("../../middleware/auth");
 const router = (0, express_1.Router)();
-const db = admin.firestore();
 const COLLECTION = 'notifications';
 // =============================================================================
 // Routes
@@ -53,7 +52,7 @@ const COLLECTION = 'notifications';
 router.get('/', auth_1.authMiddleware, async (req, res) => {
     try {
         const { read, type, limit = '50', offset = '0' } = req.query;
-        let query = db.collection(COLLECTION)
+        let query = firebase_1.db.collection(COLLECTION)
             .where('userId', '==', req.user?.uid);
         if (read !== undefined) {
             query = query.where('read', '==', read === 'true');
@@ -74,7 +73,7 @@ router.get('/', auth_1.authMiddleware, async (req, res) => {
             });
         });
         // Get unread count
-        const unreadSnapshot = await db.collection(COLLECTION)
+        const unreadSnapshot = await firebase_1.db.collection(COLLECTION)
             .where('userId', '==', req.user?.uid)
             .where('read', '==', false)
             .count()
@@ -100,7 +99,7 @@ router.get('/', auth_1.authMiddleware, async (req, res) => {
  */
 router.get('/unread-count', auth_1.authMiddleware, async (req, res) => {
     try {
-        const snapshot = await db.collection(COLLECTION)
+        const snapshot = await firebase_1.db.collection(COLLECTION)
             .where('userId', '==', req.user?.uid)
             .where('read', '==', false)
             .count()
@@ -127,7 +126,7 @@ router.get('/unread-count', auth_1.authMiddleware, async (req, res) => {
 router.put('/:id/read', auth_1.authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
-        const docRef = db.collection(COLLECTION).doc(id);
+        const docRef = firebase_1.db.collection(COLLECTION).doc(id);
         const doc = await docRef.get();
         if (!doc.exists) {
             res.status(404).json({
@@ -147,7 +146,7 @@ router.put('/:id/read', auth_1.authMiddleware, async (req, res) => {
         }
         await docRef.update({
             read: true,
-            readAt: admin.firestore.FieldValue.serverTimestamp()
+            readAt: firebase_1.default.firestore.FieldValue.serverTimestamp()
         });
         res.json({
             success: true,
@@ -168,15 +167,15 @@ router.put('/:id/read', auth_1.authMiddleware, async (req, res) => {
  */
 router.put('/read-all', auth_1.authMiddleware, async (req, res) => {
     try {
-        const snapshot = await db.collection(COLLECTION)
+        const snapshot = await firebase_1.db.collection(COLLECTION)
             .where('userId', '==', req.user?.uid)
             .where('read', '==', false)
             .get();
-        const batch = db.batch();
+        const batch = firebase_1.db.batch();
         snapshot.docs.forEach(doc => {
             batch.update(doc.ref, {
                 read: true,
-                readAt: admin.firestore.FieldValue.serverTimestamp()
+                readAt: firebase_1.default.firestore.FieldValue.serverTimestamp()
             });
         });
         await batch.commit();
@@ -200,7 +199,7 @@ router.put('/read-all', auth_1.authMiddleware, async (req, res) => {
 router.delete('/:id', auth_1.authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
-        const docRef = db.collection(COLLECTION).doc(id);
+        const docRef = firebase_1.db.collection(COLLECTION).doc(id);
         const doc = await docRef.get();
         if (!doc.exists) {
             res.status(404).json({
@@ -238,10 +237,10 @@ router.delete('/:id', auth_1.authMiddleware, async (req, res) => {
  */
 router.delete('/clear-all', auth_1.authMiddleware, async (req, res) => {
     try {
-        const snapshot = await db.collection(COLLECTION)
+        const snapshot = await firebase_1.db.collection(COLLECTION)
             .where('userId', '==', req.user?.uid)
             .get();
-        const batch = db.batch();
+        const batch = firebase_1.db.batch();
         snapshot.docs.forEach(doc => {
             batch.delete(doc.ref);
         });

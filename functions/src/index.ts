@@ -16,20 +16,15 @@
 
 import * as functions from 'firebase-functions';
 import { onRequest } from 'firebase-functions/v2/https';
-import * as admin from 'firebase-admin';
+
+// Initialize Firebase FIRST - before any other imports that use it
+import admin, { db } from './firebase';
 
 // Import configuration (includes secret definitions)
 import { encryptionKeySecret, config } from './config';
 
-// Import Express app
+// Import Express app (after firebase is initialized)
 import app from './app';
-
-// =============================================================================
-// Initialize Firebase Admin SDK
-// =============================================================================
-
-admin.initializeApp();
-const db = admin.firestore();
 
 // =============================================================================
 // Region Configuration

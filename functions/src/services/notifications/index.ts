@@ -4,11 +4,10 @@
  */
 
 import { Router, Response } from 'express';
-import * as admin from 'firebase-admin';
+import admin, { db } from '../../firebase';
 import { authMiddleware, AuthenticatedRequest } from '../../middleware/auth';
 
 const router = Router();
-const db = admin.firestore();
 const COLLECTION = 'notifications';
 
 // Type definitions

@@ -38,10 +38,9 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const admin = __importStar(require("firebase-admin"));
+const firebase_1 = __importStar(require("../../firebase"));
 const auth_1 = require("../../middleware/auth");
 const router = (0, express_1.Router)();
-const db = admin.firestore();
 const COLLECTION = 'drills';
 // =============================================================================
 // Routes
@@ -53,7 +52,7 @@ const COLLECTION = 'drills';
 router.get('/', auth_1.authMiddleware, async (req, res) => {
     try {
         const { athleteId, coachId, status, completed, limit = '50', offset = '0' } = req.query;
-        let query = db.collection(COLLECTION);
+        let query = firebase_1.db.collection(COLLECTION);
         // Apply filters based on user role
         if (req.user?.role === 'athlete') {
             // Athletes can only see their own drills
@@ -111,7 +110,7 @@ router.get('/', auth_1.authMiddleware, async (req, res) => {
 router.get('/:id', auth_1.authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
-        const doc = await db.collection(COLLECTION).doc(id).get();
+        const doc = await firebase_1.db.collection(COLLECTION).doc(id).get();
         if (!doc.exists) {
             res.status(404).json({
                 success: false,
@@ -162,7 +161,7 @@ router.post('/', auth_1.authMiddleware, (0, auth_1.requireRole)('coach', 'admin'
             return;
         }
         // Verify the athlete exists
-        const athleteDoc = await db.collection('athletes').doc(drillData.athleteId).get();
+        const athleteDoc = await firebase_1.db.collection('athletes').doc(drillData.athleteId).get();
         if (!athleteDoc.exists) {
             res.status(400).json({
                 success: false,
@@ -175,17 +174,17 @@ router.post('/', auth_1.authMiddleware, (0, auth_1.requireRole)('coach', 'admin'
             coachId: req.user?.uid,
             status: 'assigned',
             completed: false,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            createdAt: firebase_1.default.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase_1.default.firestore.FieldValue.serverTimestamp()
         };
-        const docRef = await db.collection(COLLECTION).add(dataToStore);
+        const docRef = await firebase_1.db.collection(COLLECTION).add(dataToStore);
         // Create notification for athlete
-        await db.collection('notifications').add({
+        await firebase_1.db.collection('notifications').add({
             userId: drillData.athleteId,
             type: 'drill_assigned',
             message: `New drill assigned: ${drillData.title}`,
             drillId: docRef.id,
-            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            timestamp: firebase_1.default.firestore.FieldValue.serverTimestamp(),
             read: false
         });
         res.status(201).json({
@@ -213,7 +212,7 @@ router.put('/:id', auth_1.authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const updateData = req.body;
-        const docRef = db.collection(COLLECTION).doc(id);
+        const docRef = firebase_1.db.collection(COLLECTION).doc(id);
         const doc = await docRef.get();
         if (!doc.exists) {
             res.status(404).json({
@@ -236,7 +235,7 @@ router.put('/:id', auth_1.authMiddleware, async (req, res) => {
         }
         await docRef.update({
             ...updateData,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase_1.default.firestore.FieldValue.serverTimestamp(),
             updatedBy: req.user?.uid
         });
         res.json({
@@ -264,7 +263,7 @@ router.post('/:id/submit', auth_1.authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const { videoUrl, notes } = req.body;
-        const docRef = db.collection(COLLECTION).doc(id);
+        const docRef = firebase_1.db.collection(COLLECTION).doc(id);
         const doc = await docRef.get();
         if (!doc.exists) {
             res.status(404).json({
@@ -286,8 +285,8 @@ router.post('/:id/submit', auth_1.authMiddleware, async (req, res) => {
             status: 'Pending Review',
             videoUrl,
             notes,
-            submittedAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            submittedAt: firebase_1.default.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase_1.default.firestore.FieldValue.serverTimestamp()
         });
         res.json({
             success: true,
@@ -310,7 +309,7 @@ router.post('/:id/review', auth_1.authMiddleware, (0, auth_1.requireRole)('coach
     try {
         const { id } = req.params;
         const { approved, feedback, rating } = req.body;
-        const docRef = db.collection(COLLECTION).doc(id);
+        const docRef = firebase_1.db.collection(COLLECTION).doc(id);
         const doc = await docRef.get();
         if (!doc.exists) {
             res.status(404).json({
@@ -332,22 +331,22 @@ router.post('/:id/review', auth_1.authMiddleware, (0, auth_1.requireRole)('coach
         await docRef.update({
             status,
             completed: approved,
-            completedAt: approved ? admin.firestore.FieldValue.serverTimestamp() : null,
+            completedAt: approved ? firebase_1.default.firestore.FieldValue.serverTimestamp() : null,
             feedback,
             rating,
             reviewedBy: req.user?.uid,
-            reviewedAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            reviewedAt: firebase_1.default.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase_1.default.firestore.FieldValue.serverTimestamp()
         });
         // Notify athlete
-        await db.collection('notifications').add({
+        await firebase_1.db.collection('notifications').add({
             userId: existingData.athleteId,
             type: approved ? 'drill_approved' : 'drill_rejected',
             message: approved
                 ? `Your drill "${existingData.title}" was approved!`
                 : `Your drill "${existingData.title}" needs revision`,
             drillId: id,
-            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            timestamp: firebase_1.default.firestore.FieldValue.serverTimestamp(),
             read: false
         });
         res.json({
@@ -370,7 +369,7 @@ router.post('/:id/review', auth_1.authMiddleware, (0, auth_1.requireRole)('coach
 router.delete('/:id', auth_1.authMiddleware, (0, auth_1.requireRole)('coach', 'admin'), async (req, res) => {
     try {
         const { id } = req.params;
-        const docRef = db.collection(COLLECTION).doc(id);
+        const docRef = firebase_1.db.collection(COLLECTION).doc(id);
         const doc = await docRef.get();
         if (!doc.exists) {
             res.status(404).json({

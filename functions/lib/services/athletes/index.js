@@ -38,11 +38,10 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const admin = __importStar(require("firebase-admin"));
+const firebase_1 = __importStar(require("../../firebase"));
 const auth_1 = require("../../middleware/auth");
 const encryption_1 = require("../../utils/encryption");
 const router = (0, express_1.Router)();
-const db = admin.firestore();
 const COLLECTION = 'athletes';
 // =============================================================================
 // Routes
@@ -54,7 +53,7 @@ const COLLECTION = 'athletes';
 router.get('/', auth_1.authMiddleware, async (req, res) => {
     try {
         const { coachId, limit = '50', offset = '0' } = req.query;
-        let query = db.collection(COLLECTION);
+        let query = firebase_1.db.collection(COLLECTION);
         // Filter by coach if specified or if user is a coach
         if (coachId) {
             query = query.where('coachId', '==', coachId);
@@ -100,7 +99,7 @@ router.get('/', auth_1.authMiddleware, async (req, res) => {
 router.get('/:id', auth_1.authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
-        const doc = await db.collection(COLLECTION).doc(id).get();
+        const doc = await firebase_1.db.collection(COLLECTION).doc(id).get();
         if (!doc.exists) {
             res.status(404).json({
                 success: false,
@@ -155,11 +154,11 @@ router.post('/', auth_1.authMiddleware, async (req, res) => {
         // Add metadata
         const dataToStore = {
             ...encrypted,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: firebase_1.default.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase_1.default.firestore.FieldValue.serverTimestamp(),
             createdBy: req.user?.uid
         };
-        const docRef = await db.collection(COLLECTION).add(dataToStore);
+        const docRef = await firebase_1.db.collection(COLLECTION).add(dataToStore);
         res.status(201).json({
             success: true,
             data: {
@@ -186,7 +185,7 @@ router.put('/:id', auth_1.authMiddleware, async (req, res) => {
         const { id } = req.params;
         const updateData = req.body;
         // Check if athlete exists
-        const docRef = db.collection(COLLECTION).doc(id);
+        const docRef = firebase_1.db.collection(COLLECTION).doc(id);
         const doc = await docRef.get();
         if (!doc.exists) {
             res.status(404).json({
@@ -209,7 +208,7 @@ router.put('/:id', auth_1.authMiddleware, async (req, res) => {
         // Update with metadata
         await docRef.update({
             ...encrypted,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase_1.default.firestore.FieldValue.serverTimestamp(),
             updatedBy: req.user?.uid
         });
         res.json({
@@ -236,7 +235,7 @@ router.put('/:id', auth_1.authMiddleware, async (req, res) => {
 router.delete('/:id', auth_1.authMiddleware, (0, auth_1.requireRole)('admin'), async (req, res) => {
     try {
         const { id } = req.params;
-        const docRef = db.collection(COLLECTION).doc(id);
+        const docRef = firebase_1.db.collection(COLLECTION).doc(id);
         const doc = await docRef.get();
         if (!doc.exists) {
             res.status(404).json({

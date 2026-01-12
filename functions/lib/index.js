@@ -54,16 +54,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.onAthleteUpdate = exports.onDrillUpdate = exports.checkAthleteProgress = exports.api = void 0;
 const functions = __importStar(require("firebase-functions"));
 const https_1 = require("firebase-functions/v2/https");
-const admin = __importStar(require("firebase-admin"));
+// Initialize Firebase FIRST - before any other imports that use it
+const firebase_1 = __importStar(require("./firebase"));
 // Import configuration (includes secret definitions)
 const config_1 = require("./config");
-// Import Express app
+// Import Express app (after firebase is initialized)
 const app_1 = __importDefault(require("./app"));
-// =============================================================================
-// Initialize Firebase Admin SDK
-// =============================================================================
-admin.initializeApp();
-const db = admin.firestore();
 // =============================================================================
 // Region Configuration
 // =============================================================================
@@ -97,11 +93,11 @@ exports.checkAthleteProgress = region.pubsub
     console.log('Checking athlete progress...');
     try {
         // Get all athletes from Firestore
-        const athletesSnapshot = await db.collection('athletes').get();
+        const athletesSnapshot = await firebase_1.db.collection('athletes').get();
         for (const athleteDoc of athletesSnapshot.docs) {
             const athleteId = athleteDoc.id;
             // Check for incomplete drills assigned to this athlete
-            const drillsSnapshot = await db
+            const drillsSnapshot = await firebase_1.db
                 .collection('drills')
                 .where('athleteId', '==', athleteId)
                 .where('completed', '==', false)
@@ -181,14 +177,14 @@ exports.onAthleteUpdate = region.firestore
  */
 async function updateAthleteProgress(athleteId) {
     try {
-        const athleteRef = db.collection('athletes').doc(athleteId);
+        const athleteRef = firebase_1.db.collection('athletes').doc(athleteId);
         const athleteDoc = await athleteRef.get();
         if (!athleteDoc.exists) {
             console.error(`Athlete ${athleteId} does not exist`);
             return;
         }
         // Calculate progress percentage
-        const drillsSnapshot = await db
+        const drillsSnapshot = await firebase_1.db
             .collection('drills')
             .where('athleteId', '==', athleteId)
             .get();
@@ -221,7 +217,7 @@ async function updateAthleteProgress(athleteId) {
 async function notifyCoachOfCompletion(athleteId, drillId) {
     try {
         // Get athlete and coach info
-        const athleteDoc = await db.collection('athletes').doc(athleteId).get();
+        const athleteDoc = await firebase_1.db.collection('athletes').doc(athleteId).get();
         if (!athleteDoc.exists)
             return;
         const athleteData = athleteDoc.data();
@@ -229,13 +225,13 @@ async function notifyCoachOfCompletion(athleteId, drillId) {
         if (coachId) {
             console.log(`Notifying coach ${coachId} about drill ${drillId} completion by athlete ${athleteId}`);
             // Add notification to Firestore for the coach
-            await db.collection('notifications').add({
+            await firebase_1.db.collection('notifications').add({
                 userId: coachId,
                 type: 'drill_completion',
                 message: `Athlete ${athleteData.name || 'Unknown Athlete'} has completed a drill`,
                 drillId: drillId,
                 athleteId: athleteId,
-                timestamp: admin.firestore.FieldValue.serverTimestamp(),
+                timestamp: firebase_1.default.firestore.FieldValue.serverTimestamp(),
                 read: false
             });
         }
@@ -250,11 +246,11 @@ async function notifyCoachOfCompletion(athleteId, drillId) {
  */
 async function sendNotification(userId, message, type) {
     try {
-        await db.collection('notifications').add({
+        await firebase_1.db.collection('notifications').add({
             userId: userId,
             type: type,
             message: message,
-            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            timestamp: firebase_1.default.firestore.FieldValue.serverTimestamp(),
             read: false
         });
         console.log(`Notification sent to user ${userId}: ${message}`);
@@ -269,18 +265,18 @@ async function sendNotification(userId, message, type) {
  */
 async function sendNotificationToCoach(athleteId, message, type) {
     try {
-        const athleteDoc = await db.collection('athletes').doc(athleteId).get();
+        const athleteDoc = await firebase_1.db.collection('athletes').doc(athleteId).get();
         if (!athleteDoc.exists)
             return;
         const athleteData = athleteDoc.data();
         const coachId = athleteData.coachId;
         if (coachId) {
-            await db.collection('notifications').add({
+            await firebase_1.db.collection('notifications').add({
                 userId: coachId,
                 type: type,
                 message: message,
                 athleteId: athleteId,
-                timestamp: admin.firestore.FieldValue.serverTimestamp(),
+                timestamp: firebase_1.default.firestore.FieldValue.serverTimestamp(),
                 read: false
             });
             console.log(`Notification sent to coach ${coachId}: ${message}`);

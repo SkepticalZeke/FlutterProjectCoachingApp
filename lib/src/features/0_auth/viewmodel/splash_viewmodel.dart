@@ -15,9 +15,9 @@ class SplashViewModel extends ChangeNotifier {
 
   // 2. Logic to determine the initial route based on the user object
   String getInitialRoute(User? user) {
-    // If user is null, go to the main login page for athletes.
+    // If user is null, go to the role selection page.
     if (user == null) {
-      return '/login';
+      return '/role-selection';
     }
     // If a user exists (meaning a Coach is logged in), go to the coach home.
     return '/coach-home';

@@ -5,35 +5,54 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/services/auth_repository.dart';
 import '../../../core/services/database_repository.dart';
 
-/*
-  VIEW-MODEL (VM)
-  This is the "brain" for the Coach Dashboard View.
-*/
 class CoachDashboardViewModel extends ChangeNotifier {
-  // 1. Repositories
   final AuthRepository _authRepo = AuthRepository();
   final DatabaseRepository _dbRepo = DatabaseRepository();
 
-  // 2. Getters for View
-  // Gets the UID of the currently logged-in coach
   String? get coachUid => _authRepo.currentUser?.uid;
 
-  // Provides a live stream of athletes for the View to listen to
+  // State for loading indicators during add actions
+  bool _isProcessing = false;
+  bool get isProcessing => _isProcessing;
+
   Stream<QuerySnapshot> get athletesStream {
-    if (coachUid == null) {
-      // Return an empty stream if the user is somehow logged out
-      return const Stream.empty();
-    }
+    if (coachUid == null) return const Stream.empty();
     return _dbRepo.getAthletesStream(coachUid!);
   }
 
-  // 3. Logic
+  // --- Logic: Add New Athlete ---
+  Future<bool> addNewAthlete(String name, String pin) async {
+    if (coachUid == null) return false;
+    _setProcessing(true);
+    try {
+      await _dbRepo.addNewAthlete(
+        coachUid: coachUid!,
+        name: name,
+        pin: pin,
+      );
+      _setProcessing(false);
+      return true;
+    } catch (e) {
+      debugPrint("Error adding athlete: $e");
+      _setProcessing(false);
+      return false;
+    }
+  }
+
+  // --- Logic: Mass Assign (Concept) ---
+  // In a full implementation, you would pass a list of athlete IDs.
+  // For now, this is a placeholder or you can implement a "Assign to All" here.
+  
   Future<void> logout() async {
     try {
       await _authRepo.signOut();
     } catch (e) {
-      // In a real app, you'd set an error state here
       debugPrint("Error logging out: $e");
     }
+  }
+
+  void _setProcessing(bool value) {
+    _isProcessing = value;
+    notifyListeners();
   }
 }

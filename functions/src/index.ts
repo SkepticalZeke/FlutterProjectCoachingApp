@@ -1,15 +1,72 @@
+/**
+ * Firebase Cloud Functions Entry Point
+ * 
+ * This file exports all Cloud Functions for the Fitness Coaching App
+ * 
+ * Architecture:
+ * - Express.js API wrapped in onRequest for HTTP endpoints
+ * - Independent microservices for different business domains
+ * - Firestore triggers for real-time updates
+ * - Scheduled functions for periodic tasks
+ * 
+ * Project: fitness-coaching-app-5633f
+ * Region: asia-southeast1 (Singapore)
+ * Runtime: Node.js 22 with TypeScript
+ */
+
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
-// Initialize the Firebase Admin SDK
+// Import configuration
+import { validateConfig } from './config';
+
+// Import Express app
+import app from './app';
+
+// =============================================================================
+// Initialize Firebase Admin SDK
+// =============================================================================
+
 admin.initializeApp();
 const db = admin.firestore();
 
-// Scheduled function to periodically check athlete progress
-export const checkAthleteProgress = functions.pubsub
+// Validate configuration on cold start
+try {
+  validateConfig();
+} catch (error) {
+  console.error('Configuration validation error:', error);
+}
+
+// =============================================================================
+// Region Configuration
+// =============================================================================
+
+const region = functions.region('asia-southeast1');
+
+// =============================================================================
+// HTTP API (Express.js wrapped in Cloud Function)
+// =============================================================================
+
+/**
+ * Main API endpoint
+ * All HTTP requests are handled by Express.js
+ * 
+ * Base URL: https://asia-southeast1-fitness-coaching-app-5633f.cloudfunctions.net/api
+ */
+export const api = region.https.onRequest(app);
+
+// =============================================================================
+// Scheduled Functions
+// =============================================================================
+
+/**
+ * Check Athlete Progress
+ * Runs every 30 minutes during active hours to remind athletes of pending drills
+ */
+export const checkAthleteProgress = region.pubsub
   .schedule('every 30 minutes from 06:00 to 00:00')
-  .timeZone('America/New_York')
-  .onRun(async (context) => {
+  .timeZone('Asia/Singapore') // Updated for singapore region
+  .onRun(async () => {
     console.log('Checking athlete progress...');
 
     try {
@@ -18,20 +75,20 @@ export const checkAthleteProgress = functions.pubsub
 
       for (const athleteDoc of athletesSnapshot.docs) {
         const athleteId = athleteDoc.id;
-        
+
         // Check for incomplete drills assigned to this athlete
         const drillsSnapshot = await db
           .collection('drills')
           .where('athleteId', '==', athleteId)
           .where('completed', '==', false)
           .get();
-        
+
         if (!drillsSnapshot.empty) {
           // Send notification about pending drills
           await sendNotification(athleteId, 'You have pending drills to complete!', 'drill_reminder');
         }
       }
-      
+
       console.log('Athlete progress check completed successfully');
       return null;
     } catch (error) {
@@ -40,8 +97,15 @@ export const checkAthleteProgress = functions.pubsub
     }
   });
 
-// Firestore trigger for real-time checks when drills are updated
-export const onDrillUpdate = functions.firestore
+// =============================================================================
+// Firestore Triggers
+// =============================================================================
+
+/**
+ * On Drill Update Trigger
+ * Fires when any drill document is created, updated, or deleted
+ */
+export const onDrillUpdate = region.firestore
   .document('drills/{drillId}')
   .onWrite(async (change, context) => {
     const beforeData = change.before.data();
@@ -71,8 +135,11 @@ export const onDrillUpdate = functions.firestore
     }
   });
 
-// Firestore trigger for athlete updates
-export const onAthleteUpdate = functions.firestore
+/**
+ * On Athlete Update Trigger
+ * Fires when an athlete document is updated
+ */
+export const onAthleteUpdate = region.firestore
   .document('athletes/{athleteId}')
   .onWrite(async (change, context) => {
     const beforeData = change.before.data();
@@ -104,12 +171,18 @@ export const onAthleteUpdate = functions.firestore
     }
   });
 
-// Helper function to update athlete progress
-async function updateAthleteProgress(athleteId: string) {
+// =============================================================================
+// Helper Functions
+// =============================================================================
+
+/**
+ * Update athlete progress statistics
+ */
+async function updateAthleteProgress(athleteId: string): Promise<void> {
   try {
     const athleteRef = db.collection('athletes').doc(athleteId);
     const athleteDoc = await athleteRef.get();
-    
+
     if (!athleteDoc.exists) {
       console.error(`Athlete ${athleteId} does not exist`);
       return;
@@ -120,10 +193,10 @@ async function updateAthleteProgress(athleteId: string) {
       .collection('drills')
       .where('athleteId', '==', athleteId)
       .get();
-    
+
     let completedCount = 0;
     let totalCount = 0;
-    
+
     drillsSnapshot.forEach((doc) => {
       const drillData = doc.data();
       totalCount++;
@@ -131,16 +204,16 @@ async function updateAthleteProgress(athleteId: string) {
         completedCount++;
       }
     });
-    
+
     const progress = totalCount > 0 ? completedCount / totalCount : 0;
-    
+
     // Update athlete's progress
     await athleteRef.update({
       progress: progress,
       completedDrills: completedCount,
       totalDrills: totalCount
     });
-    
+
     console.log(`Updated progress for athlete ${athleteId}: ${Math.round(progress * 100)}%`);
   } catch (error) {
     console.error('Error updating athlete progress:', error);
@@ -148,18 +221,19 @@ async function updateAthleteProgress(athleteId: string) {
   }
 }
 
-// Helper function to notify coach of drill completion
-async function notifyCoachOfCompletion(athleteId: string, drillId: string) {
+/**
+ * Notify coach when an athlete completes a drill
+ */
+async function notifyCoachOfCompletion(athleteId: string, drillId: string): Promise<void> {
   try {
     // Get athlete and coach info
     const athleteDoc = await db.collection('athletes').doc(athleteId).get();
     if (!athleteDoc.exists) return;
 
     const athleteData = athleteDoc.data()!;
-    const coachId = athleteData.coachId; // Assuming athletes have a coachId field
+    const coachId = athleteData.coachId;
 
     if (coachId) {
-      // In a real implementation, you would send a push notification or email
       console.log(`Notifying coach ${coachId} about drill ${drillId} completion by athlete ${athleteId}`);
 
       // Add notification to Firestore for the coach
@@ -179,10 +253,11 @@ async function notifyCoachOfCompletion(athleteId: string, drillId: string) {
   }
 }
 
-// Helper function to send notification to athlete
-async function sendNotification(userId: string, message: string, type: string) {
+/**
+ * Send notification to a user
+ */
+async function sendNotification(userId: string, message: string, type: string): Promise<void> {
   try {
-    // Add notification to Firestore
     await db.collection('notifications').add({
       userId: userId,
       type: type,
@@ -190,7 +265,7 @@ async function sendNotification(userId: string, message: string, type: string) {
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
       read: false
     });
-    
+
     console.log(`Notification sent to user ${userId}: ${message}`);
   } catch (error) {
     console.error('Error sending notification:', error);
@@ -198,15 +273,17 @@ async function sendNotification(userId: string, message: string, type: string) {
   }
 }
 
-// Helper function to send notification to coach
-async function sendNotificationToCoach(athleteId: string, message: string, type: string) {
+/**
+ * Send notification to an athlete's coach
+ */
+async function sendNotificationToCoach(athleteId: string, message: string, type: string): Promise<void> {
   try {
     const athleteDoc = await db.collection('athletes').doc(athleteId).get();
     if (!athleteDoc.exists) return;
-    
+
     const athleteData = athleteDoc.data()!;
     const coachId = athleteData.coachId;
-    
+
     if (coachId) {
       await db.collection('notifications').add({
         userId: coachId,
@@ -216,7 +293,7 @@ async function sendNotificationToCoach(athleteId: string, message: string, type:
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         read: false
       });
-      
+
       console.log(`Notification sent to coach ${coachId}: ${message}`);
     }
   } catch (error) {

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// Note: cloud_firestore import removed
 // Import the new ViewModel
 import '../viewmodel/coach_athlete_detail_viewmodel.dart';
 
@@ -12,8 +12,7 @@ class CoachAthleteDetailView extends StatefulWidget {
   const CoachAthleteDetailView({super.key, required this.athleteData});
 
   @override
-  State<CoachAthleteDetailView> createState() =>
-      _CoachAthleteDetailViewState();
+  State<CoachAthleteDetailView> createState() => _CoachAthleteDetailViewState();
 }
 
 class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
@@ -21,34 +20,44 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
   final _viewModel = CoachAthleteDetailViewModel();
 
   final TextEditingController _notesController = TextEditingController();
-  late String _athleteId; // We get this from the widget data
+  late String _athleteId;
+
+  // 2. State for API Data
+  late Future<List<Map<String, dynamic>>> _logsFuture;
 
   @override
   void initState() {
     super.initState();
-    // 2. Initialize the ViewModel
     _athleteId = widget.athleteData['id'];
     _viewModel.initialize(widget.athleteData);
     _notesController.text = widget.athleteData['notes'] ?? '';
 
-    // 3. Listen for changes
+    // Listen for changes
     _viewModel.addListener(_onViewModelChanged);
+
+    // Load initial logs
+    _loadLogs();
+  }
+
+  void _loadLogs() {
+    setState(() {
+      _logsFuture = _viewModel.fetchAthleteLogs(_athleteId);
+    });
   }
 
   @override
   void dispose() {
-    // 4. Clean up
     _viewModel.removeListener(_onViewModelChanged);
     _notesController.dispose();
     super.dispose();
   }
 
-  // 5. Rebuild UI when ViewModel changes
   void _onViewModelChanged() {
     setState(() {});
   }
 
-  // 6. "handle" functions now call the ViewModel
+  // --- ACTIONS ---
+
   void _saveRoutineSettings() async {
     bool success = await _viewModel.saveRoutineSettings(
       athleteId: _athleteId,
@@ -58,9 +67,7 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(success
-              ? 'Routine settings saved!'
-              : 'Failed to save settings.'),
+          content: Text(success ? 'Routine settings saved!' : 'Failed to save settings.'),
           backgroundColor: success ? Colors.green : Colors.red,
         ),
       );
@@ -78,10 +85,24 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
           backgroundColor: success ? Colors.blue : Colors.red,
         ),
       );
+      // Refresh logs to show the rest day entry if applicable
+      _loadLogs();
     }
   }
 
-  // 7. Build method is "dumb"
+  // Helper to parse dates from API (String or Timestamp Map)
+  DateTime _parseDate(dynamic dateData) {
+    if (dateData == null) return DateTime.now();
+    if (dateData is String) return DateTime.tryParse(dateData) ?? DateTime.now();
+    // Handle Firestore Timestamp sent as Map {_seconds: ..., _nanoseconds: ...}
+    if (dateData is Map && dateData.containsKey('_seconds')) {
+      return DateTime.fromMillisecondsSinceEpoch(dateData['_seconds'] * 1000);
+    }
+    return DateTime.now();
+  }
+
+  // --- BUILD ---
+
   @override
   Widget build(BuildContext context) {
     final String athleteName = widget.athleteData['name'] as String;
@@ -91,32 +112,45 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
       appBar: AppBar(
         title: Text('$athleteName\'s Details'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildStatsCard(context),
-            const SizedBox(height: 30),
-            _buildManagementCard(context),
-            const SizedBox(height: 30),
-            Text(
-              'Recent Activity Logs',
-              style: theme.textTheme.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            _buildActivityLogs(context),
-          ],
+      // Wrap body in RefreshIndicator
+      body: RefreshIndicator(
+        onRefresh: () async => _loadLogs(),
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildStatsCard(context),
+              const SizedBox(height: 30),
+              _buildManagementCard(context),
+              const SizedBox(height: 30),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Recent Activity Logs',
+                    style: theme.textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  // Small refresh button specifically for logs
+                  IconButton(
+                    icon: const Icon(Icons.refresh, size: 20),
+                    onPressed: _loadLogs,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _buildActivityLogs(context),
+            ],
+          ),
         ),
       ),
     );
   }
 
   // --- Helper Widgets ---
-  // These are part of the View, as they are UI-only
 
-  // Stats card reads from the *initial* data (doesn't need live updates)
   Widget _buildStatsCard(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
@@ -135,11 +169,8 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
               ),
             ),
             const Divider(height: 25),
-            _buildStatRow(
-                Icons.local_fire_department,
-                'Current Streak',
-                '${widget.athleteData['streak']} days',
-                Colors.amber),
+            _buildStatRow(Icons.local_fire_department, 'Current Streak',
+                '${widget.athleteData['streak']} days', Colors.amber),
             _buildStatRow(
                 Icons.calendar_today,
                 'Today\'s Status',
@@ -174,7 +205,6 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
     );
   }
 
-  // Management card reads and writes to the ViewModel
   Widget _buildManagementCard(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
@@ -203,9 +233,11 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
                   side: BorderSide(color: theme.colorScheme.primary),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
-                onPressed: () {
-                  Navigator.of(context).pushNamed('/assign-drill',
+                onPressed: () async {
+                  // Wait for the result of the assignment screen, then refresh logs
+                  await Navigator.of(context).pushNamed('/assign-drill',
                       arguments: widget.athleteData);
+                  _loadLogs();
                 },
               ),
             ),
@@ -213,22 +245,22 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
             _buildDropdownTile(
               'Difficulty',
               ['Easy', 'Moderate', 'Hard'],
-              _viewModel.currentDifficulty, // Read from ViewModel
+              _viewModel.currentDifficulty,
               (newValue) {
-                _viewModel.setDifficulty(newValue!); // Write to ViewModel
+                _viewModel.setDifficulty(newValue!);
               },
             ),
             _buildDropdownTile(
               'Skill Focus',
               ['General', 'Agility', 'Strength', 'Cardio'],
-              _viewModel.currentSkillFocus, // Read from ViewModel
+              _viewModel.currentSkillFocus,
               (newValue) {
-                _viewModel.setSkillFocus(newValue!); // Write to ViewModel
+                _viewModel.setSkillFocus(newValue!);
               },
             ),
             const SizedBox(height: 15),
             TextField(
-              controller: _notesController, // Managed by View
+              controller: _notesController,
               maxLines: 3,
               decoration: InputDecoration(
                 labelText: 'Coach\'s Notes',
@@ -241,14 +273,13 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: _addRestDay, // Call handler
+                  onPressed: _addRestDay,
                   child: Text('Add Rest Day',
                       style: TextStyle(color: theme.colorScheme.error)),
                 ),
                 const SizedBox(width: 10),
                 ElevatedButton(
-                  onPressed:
-                      _viewModel.isSaving ? null : _saveRoutineSettings, // Read state
+                  onPressed: _viewModel.isSaving ? null : _saveRoutineSettings,
                   child: _viewModel.isSaving
                       ? const SizedBox(
                           height: 20,
@@ -294,19 +325,26 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
     );
   }
 
-  // Activity logs now get their stream from the ViewModel
+  // Changed from StreamBuilder to FutureBuilder
   Widget _buildActivityLogs(BuildContext context) {
     final theme = Theme.of(context);
-    return StreamBuilder<QuerySnapshot>(
-      stream: _viewModel.getAthleteLogs(_athleteId), // Call ViewModel
+    
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _logsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: Padding(
+            padding: EdgeInsets.all(20.0),
+            child: CircularProgressIndicator(),
+          ));
         }
         if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+        
+        final logs = snapshot.data ?? [];
+        
+        if (logs.isEmpty) {
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(20.0),
@@ -315,16 +353,14 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
           );
         }
 
-        final logDocs = snapshot.data!.docs;
-
         return Column(
-          children: logDocs.map((doc) {
-            final logData = doc.data() as Map<String, dynamic>;
+          children: logs.map((logData) {
             final String status = logData['status'] ?? 'Completed';
             IconData statusIcon;
             Color statusColor;
             Widget? trailingWidget;
 
+            // Status Logic
             switch (status) {
               case 'Pending Review':
                 statusIcon = Icons.hourglass_top;
@@ -335,20 +371,20 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
                     foregroundColor: theme.colorScheme.onPrimary,
                   ),
                   child: const Text('Review'),
-                  onPressed: () {
-                    // Pass all data to the review screen
+                  onPressed: () async {
                     Map<String, dynamic> routeArgs = {
                       'athleteId': _athleteId,
-                      'logId': doc.id,
+                      'logId': logData['id'], // Ensure ID is present
                       'logData': logData,
                     };
-                    // Pass the *original* athlete data as well for nav
                     routeArgs.addAll(widget.athleteData);
-                    
-                    Navigator.of(context).pushNamed(
+
+                    await Navigator.of(context).pushNamed(
                       '/review-submission',
                       arguments: routeArgs,
                     );
+                    // Refresh upon return
+                    _loadLogs();
                   },
                 );
                 break;
@@ -361,14 +397,13 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
                 statusColor = Colors.red;
                 break;
               default:
-                statusIcon =
-                    status == 'Completed' ? Icons.task_alt : Icons.cancel;
-                statusColor =
-                    status == 'Completed' ? Colors.green : Colors.red;
+                statusIcon = status == 'Completed' ? Icons.task_alt : Icons.cancel;
+                statusColor = status == 'Completed' ? Colors.green : Colors.red;
             }
 
-            final Timestamp t = logData['date'] as Timestamp;
-            final String date = t.toDate().toString().substring(0, 10);
+            // Date Parsing safely
+            final DateTime dateObj = _parseDate(logData['date']);
+            final String date = dateObj.toIso8601String().substring(0, 10);
 
             return Card(
               margin: const EdgeInsets.only(bottom: 10),
@@ -377,7 +412,7 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
                   statusIcon,
                   color: statusColor,
                 ),
-                title: Text(logData['drill'] as String),
+                title: Text(logData['drill'] ?? 'Unknown Drill'),
                 subtitle: Text('Date: $date'),
                 trailing: trailingWidget ??
                     Column(

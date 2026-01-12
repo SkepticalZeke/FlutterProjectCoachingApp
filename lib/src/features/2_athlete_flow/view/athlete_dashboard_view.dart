@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// Note: cloud_firestore import removed as we now use Maps/Lists
 // Import the new ViewModel
 import '../viewmodel/athlete_dashboard_viewmodel.dart';
 // Import shared widget
@@ -21,13 +21,26 @@ class AthleteDashboardView extends StatefulWidget {
 class _AthleteDashboardViewState extends State<AthleteDashboardView> {
   // 2. The View owns its ViewModel
   final _viewModel = AthleteDashboardViewModel();
+  
+  // 3. State variables for our API data
+  late Future<Map<String, dynamic>?> _profileFuture;
+  late Future<List<Map<String, dynamic>>> _drillsFuture;
 
   @override
   void initState() {
     super.initState();
-    // 3. Initialize the ViewModel with the athlete's data
+    // Initialize ViewModel
     _viewModel.initialize(widget.athleteData);
-    // We don't need to listen, as StreamBuilders will update the UI
+    // Load initial data
+    _loadData();
+  }
+
+  // Helper to fetch data from API
+  void _loadData() {
+    setState(() {
+      _profileFuture = _viewModel.getAthleteProfile();
+      _drillsFuture = _viewModel.getTodayDrills();
+    });
   }
 
   // 4. Navigation is a View concern
@@ -41,7 +54,7 @@ class _AthleteDashboardViewState extends State<AthleteDashboardView> {
         Navigator.of(context).pushNamed('/avatar', arguments: athleteData);
         break;
       case 2:
-        break;
+        break; // Current page
       case 3:
         Navigator.of(context).pushNamed('/rewards', arguments: athleteData);
         break;
@@ -53,80 +66,71 @@ class _AthleteDashboardViewState extends State<AthleteDashboardView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('CoachFitness Training'),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.of(context)
-                  .pushNamed('/settings', arguments: widget.athleteData);
-            },
+    // We wrap the body in a FutureBuilder for the profile so we have the latest data (like XP)
+    // available for the whole screen context if needed.
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: _profileFuture,
+      builder: (context, profileSnapshot) {
+        // Use the latest fetched data, or fallback to the data passed from the previous screen
+        final liveAthleteData = profileSnapshot.data ?? widget.athleteData;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('CoachFitness Training'),
+            elevation: 0,
+            actions: [
+              // Manual Refresh Button
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: _loadData,
+              ),
+              IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: () {
+                  Navigator.of(context)
+                      .pushNamed('/settings', arguments: liveAthleteData);
+                },
+              ),
+            ],
           ),
-        ],
-      ),
-      // 5. Main body is a StreamBuilder listening to the ViewModel
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: _viewModel.athleteStream,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text('Athlete data not found.'));
-          }
-
-          final liveAthleteData =
-              snapshot.data!.data() as Map<String, dynamic>;
-          // Add the ID to the map for navigation
-          liveAthleteData['id'] = snapshot.data!.id;
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildStreakCard(context, liveAthleteData),
-                const SizedBox(height: 20),
-                _buildAvatarSection(context, liveAthleteData),
-                const SizedBox(height: 20),
-                _buildActivityList(context, liveAthleteData),
-                const SizedBox(height: 30),
-                _buildAchievementsPreview(context, liveAthleteData),
-              ],
+          // 5. Pull-to-Refresh wraps the scrollable content
+          body: RefreshIndicator(
+            onRefresh: () async => _loadData(),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildStreakCard(context, liveAthleteData),
+                  const SizedBox(height: 20),
+                  _buildAvatarSection(context, liveAthleteData),
+                  const SizedBox(height: 20),
+                  _buildActivityList(context, liveAthleteData),
+                  const SizedBox(height: 30),
+                  _buildAchievementsPreview(context, liveAthleteData),
+                ],
+              ),
             ),
-          );
-        },
-      ),
-      // 6. Bottom Nav Bar also uses a StreamBuilder
-      bottomNavigationBar: StreamBuilder<DocumentSnapshot>(
-          stream: _viewModel.athleteStream,
-          builder: (context, snapshot) {
-            // Get live data to pass to the nav bar
-            Map<String, dynamic> liveData = widget.athleteData; // Default
-            if (snapshot.hasData && snapshot.data!.exists) {
-              liveData = snapshot.data!.data() as Map<String, dynamic>;
-              liveData['id'] = snapshot.data!.id;
-            }
-
-            return BottomNavigationBar(
-              type: BottomNavigationBarType.fixed,
-              items: const <BottomNavigationBarItem>[
-                BottomNavigationBarItem(
-                    icon: Icon(Icons.fitness_center), label: 'Drills'),
-                BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Avatar'),
-                BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-                BottomNavigationBarItem(
-                    icon: Icon(Icons.emoji_events), label: 'Rewards'),
-                BottomNavigationBarItem(
-                    icon: Icon(Icons.history), label: 'Progress'),
-              ],
-              currentIndex: 2, // Home
-              onTap: (index) => _onItemTapped(index, liveData),
-            );
-          }),
+          ),
+          // 6. Bottom Nav Bar - Updated to use liveAthleteData directly
+          bottomNavigationBar: BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
+            items: const <BottomNavigationBarItem>[
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.fitness_center), label: 'Drills'),
+              BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Avatar'),
+              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.emoji_events), label: 'Rewards'),
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.history), label: 'Progress'),
+            ],
+            currentIndex: 2, // Home
+            onTap: (index) => _onItemTapped(index, liveAthleteData),
+          ),
+        );
+      },
     );
   }
 
@@ -192,8 +196,11 @@ class _AthleteDashboardViewState extends State<AthleteDashboardView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         InkWell(
-          onTap: () => Navigator.of(context)
-              .pushNamed('/avatar', arguments: athleteData),
+          onTap: () async {
+             await Navigator.of(context)
+                .pushNamed('/avatar', arguments: athleteData);
+             _loadData(); // Refresh on return
+          },
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 20),
             decoration: BoxDecoration(
@@ -249,7 +256,7 @@ class _AthleteDashboardViewState extends State<AthleteDashboardView> {
     );
   }
 
-  // 7. This helper is now a StreamBuilder listening to the ViewModel
+  // 7. Replaced StreamBuilder with FutureBuilder for Drills
   Widget _buildActivityList(
       BuildContext context, Map<String, dynamic> athleteData) {
     final theme = Theme.of(context);
@@ -265,13 +272,32 @@ class _AthleteDashboardViewState extends State<AthleteDashboardView> {
           ),
         ),
         const SizedBox(height: 10),
-        StreamBuilder<QuerySnapshot>(
-          stream: _viewModel.todayDrillsStream,
+        FutureBuilder<List<Map<String, dynamic>>>(
+          future: _drillsFuture,
           builder: (context, snapshot) {
+            // 1. Loading State
             if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
+              return const Center(child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: CircularProgressIndicator(),
+              ));
             }
-            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            
+            // 2. Error State
+            if (snapshot.hasError) {
+              return Card(
+                child: ListTile(
+                  title: const Text('Error loading drills'),
+                  subtitle: Text('${snapshot.error}'),
+                  leading: const Icon(Icons.error, color: Colors.red),
+                ),
+              );
+            }
+
+            final drills = snapshot.data ?? [];
+
+            // 3. Empty State
+            if (drills.isEmpty) {
               return const Card(
                 child: ListTile(
                   title: Text('No drills assigned for today.'),
@@ -280,22 +306,20 @@ class _AthleteDashboardViewState extends State<AthleteDashboardView> {
               );
             }
 
-            final drillDocs = snapshot.data!.docs;
-
+            // 4. Data State
             return Column(
-              children: drillDocs.map((doc) {
-                final drill = doc.data() as Map<String, dynamic>;
+              children: drills.map((drill) {
                 final bool isCompleted = drill['completed'] ?? false;
                 final String status = drill['status'] ?? '';
 
                 // Create the map to pass to drill detail
                 final routeArgs = {
                   'athleteId': _viewModel.athleteId,
-                  'drillId': doc.id,
+                  'drillId': drill['id'], // Ensure ID is part of the map from VM
                   'drillData': drill,
                 };
 
-                // 8. Determine what the trailing widget should be
+                // Determine what the trailing widget should be
                 Widget trailingWidget;
                 if (status == 'Pending Review') {
                   trailingWidget =
@@ -305,11 +329,12 @@ class _AthleteDashboardViewState extends State<AthleteDashboardView> {
                       const Icon(Icons.check_circle, color: Colors.green);
                 } else {
                   trailingWidget = ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pushNamed(
+                    onPressed: () async {
+                      await Navigator.of(context).pushNamed(
                         '/drill-detail',
                         arguments: routeArgs,
                       );
+                      _loadData(); // Refresh upon return
                     },
                     child: const Text('Start'),
                   );

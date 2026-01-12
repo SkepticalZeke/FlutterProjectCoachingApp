@@ -14,12 +14,7 @@ class CoachNotificationsViewModel extends ChangeNotifier {
 
   // 2. Getters for Streams
   // Provides a live stream of pending submissions
-  Stream<QuerySnapshot> get pendingSubmissionsStream {
-    try {
-      return _dbRepo.getPendingSubmissionsStream();
-    } catch (e) {
-      debugPrint(e.toString());
-      return const Stream.empty();
-    }
+  Future<List<Map<String, dynamic>>> fetchPendingSubmissions() {
+    return _dbRepo.getPendingSubmissions();
   }
 }

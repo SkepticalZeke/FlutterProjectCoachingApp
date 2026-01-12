@@ -9,22 +9,20 @@ import '../../../core/services/database_repository.dart';
   This is the "brain" for the Athlete Rewards View.
 */
 class RewardsViewModel extends ChangeNotifier {
-  // 1. Repositories
   final DatabaseRepository _dbRepo = DatabaseRepository();
-
-  // 2. State
   late String _athleteId;
 
-  // 3. Getters for Streams
-  // Provides a live stream of the athlete's main document (for level/xp)
-  Stream<DocumentSnapshot> get athleteStream {
-    return _dbRepo.getAthleteDocumentStream(_athleteId);
-  }
-
-  // 4. Initialization
   void initialize(Map<String, dynamic> athleteData) {
     _athleteId = athleteData['id'];
   }
+
+  // --- REPLACED STREAM WITH FUTURE ---
+  
+  // Fetch athlete data to update Level/XP and check unlocks
+  Future<Map<String, dynamic>?> fetchAthleteProfile() {
+    return _dbRepo.getAthleteDocument(_athleteId);
+  }
+
 
   // 5. Logic & Data for Achievements
   // (This is mock data for now, but the logic to check

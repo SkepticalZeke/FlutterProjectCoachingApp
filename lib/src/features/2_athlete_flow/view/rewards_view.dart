@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-// Import the new ViewModel
+// Note: cloud_firestore import removed
 import '../viewmodel/rewards_viewmodel.dart';
 
 /*
@@ -16,108 +15,129 @@ class RewardsView extends StatefulWidget {
 }
 
 class _RewardsViewState extends State<RewardsView> {
-  // 1. The View owns its ViewModel
   final _viewModel = RewardsViewModel();
+  
+  // State for API Data
+  late Future<Map<String, dynamic>?> _profileFuture;
 
   @override
   void initState() {
     super.initState();
-    // 2. Initialize the ViewModel
     _viewModel.initialize(widget.athleteData);
-    // We don't need to listen, as StreamBuilders will update the UI
+    _loadData();
   }
 
-  // 3. Build method is "dumb"
+  void _loadData() {
+    setState(() {
+      _profileFuture = _viewModel.fetchAthleteProfile();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Trophy Cabinet'),
-      ),
-      body: Column(
-        children: [
-          // --- 1. Player Level & XP Summary (Live) ---
-          _buildPlayerSummary(context),
-
-          // --- 2. Achievements Grid (from ViewModel) ---
-          Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.all(20.0),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-              ),
-              // 4. Get list from ViewModel
-              itemCount: _viewModel.achievements.length,
-              itemBuilder: (context, index) {
-                final achievement = _viewModel.achievements[index];
-                return AchievementBadge(
-                  name: achievement['name'] as String,
-                  icon: achievement['icon'] as IconData,
-                  color: achievement['color'] as Color,
-                  isUnlocked: achievement['unlocked'] as bool,
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 5. This helper is now a StreamBuilder listening to the ViewModel
-  Widget _buildPlayerSummary(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return StreamBuilder<DocumentSnapshot>(
-      stream: _viewModel.athleteStream,
+    // 1. Wrap the whole screen in FutureBuilder so we have the latest XP/Level data
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: _profileFuture,
       builder: (context, snapshot) {
-        // Default values
-        int currentLevel = 1;
-        int totalXp = 0;
+        // Use latest data or fallback to widget arguments
+        final liveData = snapshot.data ?? widget.athleteData;
 
-        if (snapshot.hasData && snapshot.data!.exists) {
-          final data = snapshot.data!.data() as Map<String, dynamic>;
-          currentLevel = data['level'] ?? 1;
-          totalXp = (data['totalXp'] ?? 0).toInt();
-        }
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('My Trophy Cabinet'),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: _loadData,
+              )
+            ],
+          ),
+          body: Column(
+            children: [
+              // --- 1. Player Level & XP Summary ---
+              // Pass the data directly instead of building a stream inside
+              _buildPlayerSummary(context, liveData),
 
-        return Card(
-          margin: const EdgeInsets.all(16.0),
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  'Current Level: $currentLevel', // ⭐️ Use real data
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
+              // --- 2. Achievements Grid ---
+              Expanded(
+                // Wrap Grid in RefreshIndicator for Pull-to-Refresh
+                child: RefreshIndicator(
+                  onRefresh: () async => _loadData(),
+                  child: GridView.builder(
+                    padding: const EdgeInsets.all(20.0),
+                    // AlwaysScrollable ensures refresh works even if items don't fill screen
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                    ),
+                    itemCount: _viewModel.achievements.length,
+                    itemBuilder: (context, index) {
+                      final achievement = _viewModel.achievements[index];
+                      // Note: In a real app, you would check liveData['achievements'] here
+                      // to see if this specific achievement is unlocked.
+                      // For now, using the static 'unlocked' property from VM.
+                      
+                      return AchievementBadge(
+                        name: achievement['name'] as String,
+                        icon: achievement['icon'] as IconData,
+                        color: achievement['color'] as Color,
+                        isUnlocked: achievement['unlocked'] as bool,
+                      );
+                    },
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Total XP Earned: $totalXp', // ⭐️ Use real data
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
     );
   }
+
+  // 2. Updated to accept Map data directly (No StreamBuilder)
+  Widget _buildPlayerSummary(BuildContext context, Map<String, dynamic> data) {
+    final theme = Theme.of(context);
+
+    int currentLevel = data['level'] ?? 1;
+    int totalXp = (data['totalXp'] ?? 0).toInt();
+
+    return Card(
+      margin: const EdgeInsets.all(16.0),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Container(
+          width: double.infinity, // Center horizontally
+          alignment: Alignment.center,
+          child: Column(
+            children: [
+              Text(
+                'Current Level: $currentLevel',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Total XP Earned: $totalXp',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 // --- AchievementBadge widget (Unchanged) ---
-// (We should move this to lib/src/shared/widgets/ later)
 class AchievementBadge extends StatelessWidget {
   final String name;
   final IconData icon;

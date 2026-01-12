@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// Note: cloud_firestore import removed
 // Import the new ViewModel
 import '../viewmodel/avatar_viewmodel.dart';
-// Note: No Firebase imports here!
 
 /*
   VIEW (V)
@@ -21,46 +20,59 @@ class _AvatarViewState extends State<AvatarView>
   // 1. The View owns its ViewModel
   final _viewModel = AvatarViewModel();
   late TabController _tabController;
+  
+  // 2. State for our API Data
+  late Future<Map<String, dynamic>?> _profileFuture;
 
   @override
   void initState() {
     super.initState();
-    // 2. Initialize the ViewModel
+    // Initialize ViewModel
     _viewModel.initialize(widget.athleteData);
     _tabController = TabController(length: 3, vsync: this);
-    // 3. Listen for changes
+    
+    // Listen for changes (error messages)
     _viewModel.addListener(_onViewModelChanged);
+    
+    // Load Initial Data
+    _loadProfile();
+  }
+
+  // Helper to fetch data from API
+  Future<void> _loadProfile() async {
+    setState(() {
+      _profileFuture = _viewModel.fetchAthleteProfile();
+    });
   }
 
   @override
   void dispose() {
-    // 4. Clean up
     _viewModel.removeListener(_onViewModelChanged);
     _tabController.dispose();
     _viewModel.dispose();
     super.dispose();
   }
 
-  // 5. Rebuild UI when ViewModel changes
   void _onViewModelChanged() {
     if (_viewModel.errorMessage != null) {
       _showErrorSnackBar(_viewModel.errorMessage!);
     }
-    setState(() {}); // Rebuild to update loading spinner
+    setState(() {}); // Rebuild to update loading spinner if needed
   }
 
-  // 6. "handle" function now calls the ViewModel
+  // 3. Handle Item Selection (Buy or Equip)
   void _handleItemSelect(
     Map<String, dynamic> item,
     String category,
     Map<String, dynamic> liveAthleteData,
   ) async {
-    // Show a snackbar with the result
-    final result = await _viewModel.selectOrBuyItem(
+    // Call the ViewModel (Note: ensure your VM method name matches this)
+    // Using 'purchaseOrEquipItem' to match the VM code provided earlier
+    final result = await _viewModel.purchaseOrEquipItem(
       item,
-      category,
       liveAthleteData,
     );
+    
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -69,6 +81,8 @@ class _AvatarViewState extends State<AvatarView>
               _viewModel.errorMessage == null ? Colors.green : Colors.red,
         ),
       );
+      // 4. IMPORTANT: Refresh the profile to show new Stars balance / Equipped item
+      _loadProfile();
     }
   }
 
@@ -81,35 +95,38 @@ class _AvatarViewState extends State<AvatarView>
     );
   }
 
-  // 7. Build method is "dumb" and wrapped in a StreamBuilder
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Athlete & Gear'),
-      ),
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: _viewModel.athleteStream,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    // 5. FutureBuilder replaces StreamBuilder
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: _profileFuture,
+      builder: (context, snapshot) {
+        // Use latest fetched data, or fallback to the data passed in navigation
+        final liveAthleteData = snapshot.data ?? widget.athleteData;
 
-          final liveAthleteData =
-              snapshot.data!.data() as Map<String, dynamic>;
+        // Extract data
+        final int currentStars = liveAthleteData['stars'] ?? 0;
+        final int currentXp = (liveAthleteData['currentXp'] ?? 0).toInt();
+        final int selectedOutfitId = liveAthleteData['selectedOutfit'] ?? 101;
+        final int selectedShoeId = liveAthleteData['selectedShoe'] ?? 201;
+        final int selectedEquipmentId = liveAthleteData['selectedEquipment'] ?? 301;
+        final List<dynamic> unlockedItems =
+            liveAthleteData['unlockedItems'] ?? [];
 
-          // Get live data
-          final int currentStars = liveAthleteData['stars'] ?? 0;
-          final int currentXp = (liveAthleteData['currentXp'] ?? 0).toInt();
-          final int selectedOutfitId = liveAthleteData['selectedOutfit'] ?? 101;
-          final int selectedShoeId = liveAthleteData['selectedShoe'] ?? 201;
-          final int selectedEquipmentId = liveAthleteData['selectedEquipment'] ?? 301;
-          final List<dynamic> unlockedItems =
-              liveAthleteData['unlockedItems'] ?? [];
-
-          return Column(
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('My Athlete & Gear'),
+            actions: [
+              // Manual Refresh Button
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: _loadProfile,
+              )
+            ],
+          ),
+          body: Column(
             children: [
               // --- Currency and Avatar Display ---
               Padding(
@@ -154,13 +171,13 @@ class _AvatarViewState extends State<AvatarView>
                       right: 40,
                       child: Icon(
                         _viewModel.equipment
-                            .firstWhere((e) => e['id'] == selectedEquipmentId,
-                                orElse: () => _viewModel.equipment.first)['icon']
+                                .firstWhere((e) => e['id'] == selectedEquipmentId,
+                                    orElse: () => _viewModel.equipment.first)['icon']
                             as IconData,
                         size: 30,
                         color: _viewModel.equipment
-                            .firstWhere((b) => b['id'] == selectedEquipmentId,
-                                orElse: () => _viewModel.equipment.first)['color']
+                                .firstWhere((b) => b['id'] == selectedEquipmentId,
+                                    orElse: () => _viewModel.equipment.first)['color']
                             as Color,
                       ),
                     ),
@@ -188,19 +205,29 @@ class _AvatarViewState extends State<AvatarView>
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildItemGrid(_viewModel.outfits, 'Outfit',
-                        selectedOutfitId, liveAthleteData, unlockedItems),
-                    _buildItemGrid(_viewModel.shoes, 'Shoe', selectedShoeId,
-                        liveAthleteData, unlockedItems),
-                    _buildItemGrid(_viewModel.equipment, 'Equipment',
-                        selectedEquipmentId, liveAthleteData, unlockedItems),
+                    // 6. Wrap Grids in RefreshIndicator to allow Pull-to-Refresh
+                    RefreshIndicator(
+                      onRefresh: _loadProfile,
+                      child: _buildItemGrid(_viewModel.outfits, 'Outfit',
+                          selectedOutfitId, liveAthleteData, unlockedItems),
+                    ),
+                    RefreshIndicator(
+                      onRefresh: _loadProfile,
+                      child: _buildItemGrid(_viewModel.shoes, 'Shoe', selectedShoeId,
+                          liveAthleteData, unlockedItems),
+                    ),
+                    RefreshIndicator(
+                      onRefresh: _loadProfile,
+                      child: _buildItemGrid(_viewModel.equipment, 'Equipment',
+                          selectedEquipmentId, liveAthleteData, unlockedItems),
+                    ),
                   ],
                 ),
               ),
             ],
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -238,6 +265,8 @@ class _AvatarViewState extends State<AvatarView>
 
     return GridView.builder(
       padding: const EdgeInsets.all(16),
+      // AlwaysScrollableScrollPhysics ensures Pull-to-Refresh works even if list is short
+      physics: const AlwaysScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         crossAxisSpacing: 16,

@@ -21,13 +21,13 @@ class DefaultFirebaseOptions {
 
   // This is your correct Web config
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: "AIzaSyCbYSrunJlZeeLEy38li1fYhfxS8jnpWtc",
-    authDomain: "coachfitness676767.firebaseapp.com",
-    projectId: "coachfitness676767",
-    storageBucket: "coachfitness676767.firebasestorage.app",
-    messagingSenderId: "68239638907",
-    appId: "1:68239638907:web:80b922c713c5f56c577dde",
-    measurementId: "G-H5QM1W45WM",
+    apiKey: "AIzaSyB0cy2Ss1f5jSsvoSeTA8sXi-0jGP_oVK0",
+    authDomain: "fitness-coaching-app-5633f.firebaseapp.com",
+    projectId: "fitness-coaching-app-5633f",
+    storageBucket: "fitness-coaching-app-5633f.firebasestorage.app",
+    messagingSenderId: "150046979522",
+    appId: "1:150046979522:web:93a562a09cda9ed6d7925b",
+    measurementId: "G-TYV1NY9Z02"
   );
 
   // ⭐️ FIX: Added placeholder for ANDROID

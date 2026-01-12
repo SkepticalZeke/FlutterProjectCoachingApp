@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// Note: cloud_firestore import removed
 // Import the new ViewModel
 import '../viewmodel/progress_viewmodel.dart';
 
@@ -25,15 +25,28 @@ class _ProgressViewState extends State<ProgressView>
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
 
+  // 2. State for API Data
+  late Future<List<Map<String, dynamic>>> _logsFuture;
+  late Future<Map<String, dynamic>?> _profileFuture;
+
   @override
   void initState() {
     super.initState();
-    // 2. Initialize the ViewModel
+    // Initialize ViewModel
     _viewModel.initialize(widget.athleteData);
 
     _tabController = TabController(length: 2, vsync: this);
     _selectedDay = _focusedDay;
-    // We don't need to listen, as StreamBuilders will update the UI
+    
+    // Load Data
+    _loadData();
+  }
+
+  void _loadData() {
+    setState(() {
+      _logsFuture = _viewModel.fetchAthleteLogs();
+      _profileFuture = _viewModel.fetchAthleteProfile();
+    });
   }
 
   @override
@@ -42,12 +55,25 @@ class _ProgressViewState extends State<ProgressView>
     super.dispose();
   }
 
+  // Helper: Parse Date from API (String or Map) to DateTime
+  DateTime? _parseDate(dynamic dateData) {
+    if (dateData == null) return null;
+    if (dateData is String) {
+      return DateTime.tryParse(dateData);
+    }
+    // Handle Firestore Timestamp sent as Map {_seconds: ..., _nanoseconds: ...}
+    if (dateData is Map && dateData.containsKey('_seconds')) {
+      final int seconds = dateData['_seconds'];
+      return DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
+    }
+    return null;
+  }
+
   // Helper function to check if a day is completed
   bool _isDayCompleted(DateTime day, Set<DateTime> completedDays) {
     return completedDays.any((completedDay) => isSameDay(completedDay, day));
   }
 
-  // 3. Build method is "dumb"
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -55,6 +81,12 @@ class _ProgressViewState extends State<ProgressView>
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Progress'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadData,
+          )
+        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: theme.colorScheme.primary,
@@ -69,20 +101,26 @@ class _ProgressViewState extends State<ProgressView>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildCalendarView(context),
-          _buildSkillGrowthView(context),
+          // Wrap in RefreshIndicator for Pull-to-Refresh
+          RefreshIndicator(
+            onRefresh: () async => _loadData(),
+            child: _buildCalendarView(context),
+          ),
+          RefreshIndicator(
+             onRefresh: () async => _loadData(),
+             child: _buildSkillGrowthView(context),
+          ),
         ],
       ),
     );
   }
 
-  // --- Tab 1: Calendar View (NOW A STREAMBUILDER) ---
+  // --- Tab 1: Calendar View (FutureBuilder) ---
   Widget _buildCalendarView(BuildContext context) {
     final theme = Theme.of(context);
 
-    // 4. Listen to the stream from the ViewModel
-    return StreamBuilder<QuerySnapshot>(
-      stream: _viewModel.athleteLogsStream,
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _logsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -91,20 +129,20 @@ class _ProgressViewState extends State<ProgressView>
           return Center(child: Text('Error: ${snapshot.error}'));
         }
 
-        // 5. Create the set of completed days from the log data
+        // 3. Create the set of completed days
         Set<DateTime> completedDays = {};
-        if (snapshot.hasData) {
-          for (var doc in snapshot.data!.docs) {
-            final data = doc.data() as Map<String, dynamic>;
-            if (data.containsKey('date')) {
-              final timestamp = data['date'] as Timestamp;
-              completedDays.add(timestamp.toDate());
-            }
+        final logs = snapshot.data ?? [];
+        
+        for (var log in logs) {
+          // Use helper to parse date safely
+          final DateTime? date = _parseDate(log['date']);
+          if (date != null) {
+            completedDays.add(date);
           }
         }
 
-        // 6. Build the UI
         return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
@@ -151,52 +189,28 @@ class _ProgressViewState extends State<ProgressView>
                       rightChevronIcon: Icon(Icons.chevron_right,
                           color: theme.colorScheme.onSurface),
                     ),
-                    // 7. Use the live data to build the green circles
                     calendarBuilders: CalendarBuilders(
                       defaultBuilder: (context, day, focusedDay) {
                         if (_isDayCompleted(day, completedDays)) {
-                          return Container(
-                            margin: const EdgeInsets.all(4.0),
-                            decoration: BoxDecoration(
-                              color: Colors.green.withValues(alpha: 0.5),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Text(
-                                '${day.day}',
-                                style: TextStyle(
-                                    color: theme.colorScheme.onSurface),
-                              ),
-                            ),
-                          );
+                          return _buildCompletedDayMarker(theme, day);
                         }
                         return null;
                       },
                       todayBuilder: (context, day, focusedDay) {
                         if (_isDayCompleted(day, completedDays)) {
-                          return Container(
-                            margin: const EdgeInsets.all(4.0),
-                            decoration: BoxDecoration(
-                              color: Colors.green.withValues(alpha: 0.5),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Text(
-                                '${day.day}',
-                                style: TextStyle(
-                                    color: theme.colorScheme.onSurface),
-                              ),
-                            ),
-                          );
+                          return _buildCompletedDayMarker(theme, day);
                         }
-                        return Center(
-                          child: Text(
-                            '${day.day}',
-                            style: TextStyle(
-                                color: theme.colorScheme.primary,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        );
+                        // Default today look if not completed
+                         return Center(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary.withOpacity(0.3),
+                                shape: BoxShape.circle
+                              ),
+                              padding: const EdgeInsets.all(6),
+                              child: Text('${day.day}'),
+                            )
+                          );
                       },
                     ),
                   ),
@@ -215,28 +229,44 @@ class _ProgressViewState extends State<ProgressView>
       },
     );
   }
+  
+  // Extracted widget for cleaner code
+  Widget _buildCompletedDayMarker(ThemeData theme, DateTime day) {
+    return Container(
+      margin: const EdgeInsets.all(4.0),
+      decoration: BoxDecoration(
+        color: Colors.green.withValues(alpha: 0.5),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          '${day.day}',
+          style: TextStyle(
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
 
-  // --- Tab 2: Skill Growth (NOW A STREAMBUILDER) ---
+  // --- Tab 2: Skill Growth (FutureBuilder) ---
   Widget _buildSkillGrowthView(BuildContext context) {
     final theme = Theme.of(context);
 
-    // 8. Listen to the stream from the ViewModel
-    return StreamBuilder<DocumentSnapshot>(
-        stream: _viewModel.athleteStream,
+    return FutureBuilder<Map<String, dynamic>?>(
+        future: _profileFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text('Athlete data not found.'));
-          }
-
-          // 9. Get the skillProgress map from the document
-          final athleteData = snapshot.data!.data() as Map<String, dynamic>;
+          
+          // Use latest data or fallback to widget arguments
+          final athleteData = snapshot.data ?? widget.athleteData;
           final skillProgress =
               athleteData['skillProgress'] as Map<String, dynamic>? ?? {};
 
           return ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(20.0),
             children: [
               Text(
@@ -277,7 +307,7 @@ class _ProgressViewState extends State<ProgressView>
                     ?.copyWith(color: theme.colorScheme.primary),
               ),
               const SizedBox(height: 15),
-              // 10. Build the skill bars from the live map
+              
               if (skillProgress.isEmpty)
                 const Center(
                     child: Padding(
@@ -285,6 +315,7 @@ class _ProgressViewState extends State<ProgressView>
                   child: Text(
                       'No skill data available yet. Complete drills to see progress!'),
                 )),
+                
               ...skillProgress.entries.map((entry) {
                 return SkillProgressIndicator(
                   skillName: entry.key,
@@ -297,8 +328,7 @@ class _ProgressViewState extends State<ProgressView>
   }
 }
 
-// --- SkillProgressIndicator widget (Unchanged) ---
-// (We should move this to lib/src/shared/widgets/ later)
+// --- SkillProgressIndicator widget ---
 class SkillProgressIndicator extends StatelessWidget {
   final String skillName;
   final double progress;

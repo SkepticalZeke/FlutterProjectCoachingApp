@@ -1,6 +1,4 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 // Import our Model
 import '../../../core/services/database_repository.dart';
 
@@ -15,24 +13,17 @@ class TrainingViewModel extends ChangeNotifier {
   // 2. State
   late String _coachUid;
 
-  // 3. Getters for Streams
-  // Provides a live stream of the coach's custom drills
-  Stream<QuerySnapshot> get coachDrillsStream {
-    try {
-      return _dbRepo.getDrillsForCoach(_coachUid);
-    } catch (e) {
-      // Return an empty stream if there's an error
-      debugPrint(e.toString());
-      return const Stream.empty();
-    }
-  }
-
-  // 4. Initialization
-  // This is called by the View to set the coachId
+  // 3. Initialization
   void initialize(Map<String, dynamic> athleteData) {
     _coachUid = athleteData['coachUid'];
   }
 
+  // 4. DATA FETCHING (FUTURE)
+  // Replaces the old Stream
+  Future<List<Map<String, dynamic>>> fetchCoachDrills() {
+    return _dbRepo.getDrillsForCoach(_coachUid);
+  }
+  
   // 5. Mock Data for "Default" Drills
   final List<Map<String, dynamic>> defaultDrills = const [
     {

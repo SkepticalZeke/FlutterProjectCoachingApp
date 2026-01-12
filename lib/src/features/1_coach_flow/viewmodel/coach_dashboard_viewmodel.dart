@@ -15,9 +15,9 @@ class CoachDashboardViewModel extends ChangeNotifier {
   bool _isProcessing = false;
   bool get isProcessing => _isProcessing;
 
-  Stream<QuerySnapshot> get athletesStream {
-    if (coachUid == null) return const Stream.empty();
-    return _dbRepo.getAthletesStream(coachUid!);
+  Future<List<Map<String, dynamic>>> fetchAthletes() async {
+    if (coachUid == null) return [];
+    return _dbRepo.getAthletes(coachUid!);
   }
 
   // --- Logic: Add New Athlete ---

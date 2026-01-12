@@ -17,13 +17,13 @@ class ProgressViewModel extends ChangeNotifier {
 
   // 3. Getters for Streams
   // Provides a live stream of the athlete's main document (for skills)
-  Stream<DocumentSnapshot> get athleteStream {
-    return _dbRepo.getAthleteDocumentStream(_athleteId);
+  Future<Map<String, dynamic>?> fetchAthleteProfile() {
+    return _dbRepo.getAthleteDocument(_athleteId);
   }
 
   // Provides a live stream of the athlete's logs (for calendar)
-  Stream<QuerySnapshot> get athleteLogsStream {
-    return _dbRepo.getAthleteLogsStream(_athleteId);
+  Future<List<Map<String, dynamic>>> fetchAthleteLogs() {
+    return _dbRepo.getAthleteLogs(_athleteId);
   }
 
   // 4. Initialization

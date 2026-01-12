@@ -19,13 +19,8 @@ class AssignDrillViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
 
   // Provides a live stream of the coach's custom drills
-  Stream<QuerySnapshot> get coachDrillsStream {
-    try {
-      return _dbRepo.getCoachDrillsStream();
-    } catch (e) {
-      // Return an empty stream if there's an error (e.g., no user)
-      return const Stream.empty();
-    }
+Future<List<Map<String, dynamic>>> fetchCoachDrills() {
+    return _dbRepo.getCoachDrills();
   }
 
   // 4. Logic

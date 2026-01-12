@@ -60,8 +60,8 @@ class CoachAthleteDetailViewModel extends ChangeNotifier {
   }
 
   // 6. Get Stream
-  Stream<QuerySnapshot> getAthleteLogs(String athleteId) {
-    return _dbRepo.getAthleteLogsStream(athleteId);
+  Future<List<Map<String, dynamic>>> fetchAthleteLogs(String athleteId) {
+    return _dbRepo.getAthleteLogs(athleteId);
   }
 
   // 7. State Setters (used by the View)

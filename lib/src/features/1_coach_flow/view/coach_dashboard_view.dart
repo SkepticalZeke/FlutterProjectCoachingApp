@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// Note: cloud_firestore import removed
 // Import the new ViewModel
 import '../viewmodel/coach_dashboard_viewmodel.dart';
 
@@ -17,8 +17,24 @@ class CoachDashboardView extends StatefulWidget {
 class _CoachDashboardViewState extends State<CoachDashboardView> {
   // 1. The View owns its ViewModel
   final _viewModel = CoachDashboardViewModel();
+  
+  // 2. State for API Data
+  late Future<List<Map<String, dynamic>>> _athletesFuture;
 
-  // 2. The View handles the logout logic (calling the ViewModel)
+  @override
+  void initState() {
+    super.initState();
+    // Load initial data
+    _loadAthletes();
+  }
+
+  void _loadAthletes() {
+    setState(() {
+      _athletesFuture = _viewModel.fetchAthletes();
+    });
+  }
+
+  // 3. The View handles the logout logic
   void _handleLogout() async {
     await _viewModel.logout();
     if (mounted) {
@@ -31,7 +47,7 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // This handles the case where the user isn't logged in
+    // Handle case where user isn't logged in
     if (_viewModel.coachUid == null) {
       return Scaffold(
         body: Center(
@@ -61,81 +77,92 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
           ),
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: _handleLogout, // Call our new handler
+            onPressed: _handleLogout,
           ),
         ],
       ),
-      // 3. The body is now a StreamBuilder listening to the ViewModel
-      body: StreamBuilder<QuerySnapshot>(
-        stream: _viewModel.athletesStream,
-        builder: (context, snapshot) {
-          // Handle Loading State
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          // Handle Error State
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          // Handle No Data State
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+      // 4. Wrap body in RefreshIndicator
+      body: RefreshIndicator(
+        onRefresh: () async => _loadAthletes(),
+        // 5. Use FutureBuilder
+        child: FutureBuilder<List<Map<String, dynamic>>>(
+          future: _athletesFuture,
+          builder: (context, snapshot) {
+            // Handle Loading State
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            // Handle Error State
+            if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            }
+            
+            final athletes = snapshot.data ?? [];
+
+            // Handle No Data State
+            if (athletes.isEmpty) {
+              // Wrap in SingleChildScrollView/ListView so Pull-to-Refresh works on empty state
+              return ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 children: [
-                  Icon(Icons.people_outline,
-                      size: 60,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
-                  const SizedBox(height: 10),
-                  const Text('No athletes found.'),
-                  Text(
-                    'Add your first athlete from the Registration screen.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.7,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.people_outline,
+                            size: 60,
+                            color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+                        const SizedBox(height: 10),
+                        const Text('No athletes found.'),
+                        Text(
+                          'Add your first athlete from the Actions menu.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
+                        ),
+                      ],
+                    ),
                   ),
+                ],
+              );
+            }
+
+            // Build the UI with the real data
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Welcome, Coach!',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Pass the real athlete list to the overview card
+                  _buildOverviewCard(context, athletes),
+                  const SizedBox(height: 30),
+                  Text(
+                    'Athletes Overview',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  // Map the real documents to the tile widget
+                  ...athletes.map((athleteData) => _buildAthleteTile(context, athleteData)),
                 ],
               ),
             );
-          }
-
-          // We have data! Get the list of athlete documents
-          final athleteDocs = snapshot.data!.docs;
-
-          // Build the UI with the real data
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Welcome, Coach!',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 24,
-                    color: theme.colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                // Pass the real athlete list to the overview card
-                _buildOverviewCard(context, athleteDocs),
-                const SizedBox(height: 30),
-                Text(
-                  'Athletes Overview',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                // Map the real documents to the tile widget
-                ...athleteDocs.map((doc) => _buildAthleteTile(context, doc)),
-              ],
-            ),
-          );
-        },
+          },
+        ),
       ),
-      // 4. FAB is unchanged
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddMenu(context),
         backgroundColor: theme.colorScheme.primary,
@@ -145,13 +172,14 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
     );
   }
 
-  // 5. Helper widgets are now part of the View
+  // 6. Updated Helpers to use Map/List instead of QuerySnapshot
   Widget _buildOverviewCard(
-      BuildContext context, List<QueryDocumentSnapshot> athletes) {
-    final completedCount = athletes.where((doc) {
-      final data = doc.data() as Map<String, dynamic>;
-      return data.containsKey('progress') && data['progress'] == 1.0;
+      BuildContext context, List<Map<String, dynamic>> athletes) {
+    
+    final completedCount = athletes.where((data) {
+      return (data['progress'] ?? 0.0) == 1.0;
     }).length;
+    
     final totalCount = athletes.length;
     final theme = Theme.of(context);
 
@@ -192,8 +220,7 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
   }
 
   Widget _buildAthleteTile(
-      BuildContext context, QueryDocumentSnapshot athleteDoc) {
-    final athleteData = athleteDoc.data() as Map<String, dynamic>;
+      BuildContext context, Map<String, dynamic> athleteData) {
     final bool isComplete = (athleteData['progress'] ?? 0.0) == 1.0;
 
     return Card(
@@ -208,7 +235,7 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
           ),
         ),
         title: Text(
-          athleteData['name'] as String,
+          athleteData['name'] ?? 'Unknown',
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         subtitle: Column(
@@ -216,26 +243,23 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
           children: [
             const SizedBox(height: 4),
             Text(
-              'Status: ${athleteData['status']}',
+              'Status: ${athleteData['status'] ?? 'N/A'}',
               style: TextStyle(
                   color: isComplete ? Colors.green[400] : Colors.red[400]),
             ),
-            Text('Current Streak: ${athleteData['streak']} days'),
-            Text('Level: ${athleteData['level']}'),
+            Text('Current Streak: ${athleteData['streak'] ?? 0} days'),
+            Text('Level: ${athleteData['level'] ?? 1}'),
           ],
         ),
         trailing: Icon(Icons.chevron_right,
             color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
-        onTap: () {
-          // 6. Navigation is handled by the View
-          Map<String, dynamic> dataToPass =
-              athleteDoc.data() as Map<String, dynamic>;
-          dataToPass['id'] = athleteDoc.id; // Add the document ID
-
-          Navigator.of(context).pushNamed(
+        onTap: () async {
+          // Navigate and wait for return to refresh data
+          await Navigator.of(context).pushNamed(
             '/coach-athlete-detail',
-            arguments: dataToPass,
+            arguments: athleteData,
           );
+          _loadAthletes();
         },
       ),
     );
@@ -268,7 +292,7 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
                 title: const Text('Create New Drill'),
                 subtitle: const Text('Upload a video and set XP'),
                 onTap: () {
-                  Navigator.pop(ctx); // Close sheet
+                  Navigator.pop(ctx);
                   Navigator.of(context).pushNamed('/create-drill');
                 },
               ),
@@ -282,12 +306,12 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
                 title: const Text('Add New Athlete'),
                 subtitle: const Text('Create a profile for a new player'),
                 onTap: () {
-                  Navigator.pop(ctx); // Close sheet
+                  Navigator.pop(ctx);
                   _showAddAthleteDialog();
                 },
               ),
 
-              // Option 3: Mass Assign (Placeholder for now)
+              // Option 3: Mass Assign
               ListTile(
                 leading: const CircleAvatar(
                   backgroundColor: Colors.orange,
@@ -297,8 +321,6 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
                 subtitle: const Text('Assign a drill to multiple athletes'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  // For now, we show a SnackBar. 
-                  // To implement fully, you'd need a multi-select screen.
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Mass Assign Coming Soon!')),
                   );
@@ -362,6 +384,9 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
                       backgroundColor: success ? Colors.green : Colors.red,
                     ),
                   );
+                  if (success) {
+                    _loadAthletes(); // Refresh list immediately
+                  }
                 }
               }
             },

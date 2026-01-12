@@ -7,7 +7,11 @@ import '../viewmodel/drill_detail_viewmodel.dart';
 
 /*
   VIEW (V)
-  This is the UI. It is "dumb" and only talks to the ViewModel.
+  Refactored DrillDetailView with:
+  - "Active Mode" Gradient Background
+  - Large, High-Contrast Timer
+  - Modern Video Player Containers
+  - Floating Action Controls
 */
 class DrillDetailView extends StatefulWidget {
   final Map<String, dynamic> routeArgs;
@@ -49,252 +53,466 @@ class _DrillDetailViewState extends State<DrillDetailView> {
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Drill Submitted for Review! +50 XP!',
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            backgroundColor: Colors.green),
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.stars_rounded, color: Colors.amber),
+              SizedBox(width: 12),
+              Text('Drill Submitted! +50 XP!',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.green,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
       );
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) Navigator.of(context).pop();
       });
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content:
-                Text('Submission failed. Please check video and try again.'),
-            backgroundColor: Colors.red),
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.error_outline, color: Colors.white),
+              SizedBox(width: 12),
+              Expanded(child: Text('Submission failed. Please check video.')),
+            ],
+          ),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
 
-  // 7. Build Action Button now reads from ViewModel
-  Widget _buildActionButton() {
+  // 7. Build Action Button logic
+  Widget _buildActionButton(ColorScheme colorScheme) {
     if (_viewModel.isCompleted) {
-      return ElevatedButton.icon(
-        onPressed: _viewModel.resetTimer, // Call ViewModel
-        icon: const Icon(Icons.refresh),
-        label: const Text('Try Again'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.grey[800],
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 40),
+      return SizedBox(
+        width: double.infinity,
+        height: 55,
+        child: ElevatedButton.icon(
+          onPressed: _viewModel.resetTimer,
+          icon: const Icon(Icons.refresh_rounded),
+          label: const Text('Reset & Try Again'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: colorScheme.surfaceContainerHighest,
+            foregroundColor: colorScheme.onSurface,
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
         ),
       );
     }
 
     if (_viewModel.isRunning) {
-      return ElevatedButton.icon(
-        onPressed: _viewModel.stopTimer, // Call ViewModel
-        icon: const Icon(Icons.pause),
-        label: const Text('Pause Drill'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.amber,
-          foregroundColor: Colors.black,
-          padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 40),
+      return SizedBox(
+        width: double.infinity,
+        height: 55,
+        child: ElevatedButton.icon(
+          onPressed: _viewModel.stopTimer,
+          icon: const Icon(Icons.pause_rounded),
+          label: const Text('Pause Drill'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.amber,
+            foregroundColor: Colors.black,
+            elevation: 4,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
         ),
       );
     } else {
-      return ElevatedButton.icon(
-        onPressed: _viewModel.startTimer, // Call ViewModel
-        icon: const Icon(Icons.play_arrow),
-        label: Text(_viewModel.currentTime == (_viewModel.drillData['time'] as int? ?? 60)
-            ? 'Start Training'
-            : 'Resume'),
+      return SizedBox(
+        width: double.infinity,
+        height: 55,
+        child: ElevatedButton.icon(
+          onPressed: _viewModel.startTimer,
+          icon: const Icon(Icons.play_arrow_rounded, size: 28),
+          label: Text(
+            _viewModel.currentTime == (_viewModel.drillData['time'] as int? ?? 60)
+                ? 'Start Training'
+                : 'Resume',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: colorScheme.primary,
+            foregroundColor: colorScheme.onPrimary,
+            elevation: 6,
+            shadowColor: colorScheme.primary.withOpacity(0.5),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+        ),
       );
     }
   }
 
-  // 8. The rest of the build method is "dumb"
+  // 8. Main Build Method
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(_viewModel.drillName), // Read from ViewModel
+        title: Text(
+          _viewModel.drillName,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                colorScheme.surface.withOpacity(0.95),
+                colorScheme.surface.withOpacity(0.0),
+              ],
+            ),
+          ),
+        ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // --- Coach's Video Player ---
-            Text(
-              'Coach\'s Example',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              height: 200,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                    color: theme.colorScheme.onSurface.withOpacity(0.2)),
-              ),
-              child: Center(
-                // Read from ViewModel
-                child: _viewModel.isCoachVideoInitialized
-                    ? AspectRatio(
-                        aspectRatio:
-                            _viewModel.coachVideoController!.value.aspectRatio,
-                        child: VideoPlayer(_viewModel.coachVideoController!),
-                      )
-                    : _viewModel.coachVideoUrl.isEmpty
-                        ? const Text('No example video for this drill.')
-                        : const CircularProgressIndicator(),
-              ),
-            ),
-            if (_viewModel.isCoachVideoInitialized)
-              IconButton(
-                // Read from ViewModel
-                icon: Icon(_viewModel.coachVideoController!.value.isPlaying
-                    ? Icons.pause_circle_filled
-                    : Icons.play_circle_filled),
-                color: theme.colorScheme.primary,
-                iconSize: 36,
-                onPressed: () {
-                  setState(() {
-                    _viewModel.coachVideoController!.value.isPlaying
-                        ? _viewModel.coachVideoController!.pause()
-                        : _viewModel.coachVideoController!.play();
-                  });
-                },
-              ),
-            const SizedBox(height: 30),
-
-            // --- Drill Instructions ---
-            Text(
-              'Goal:',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              _viewModel.drillGoal, // Read from ViewModel
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 30),
-
-            // --- Timer/Counter Display ---
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surface,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    'Time Remaining',
-                    style: TextStyle(
-                        fontSize: 20,
-                        color: theme.colorScheme.onSurface.withOpacity(0.7)),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    // Read from ViewModel
-                    _formatTime(_viewModel.currentTime),
-                    style: TextStyle(
-                      fontSize: 72,
-                      fontWeight: FontWeight.w900,
-                      color: _viewModel.currentTime < 10 &&
-                              _viewModel.currentTime > 0
-                          ? Colors.red
-                          : theme.colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 40),
-
-            // --- Action Buttons ---
-            Center(child: _buildActionButton()), // Calls ViewModel
-            const SizedBox(height: 20),
-
-            // --- Athlete's Submission Section ---
-            if (!_viewModel.isCompleted) ...[
-              Text(
-                'Your Submission',
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary),
-              ),
-              const SizedBox(height: 10),
-              Container(
-                height: 200,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                      color: theme.colorScheme.onSurface.withOpacity(0.2)),
-                ),
-                child: Center(
-                  // Read from ViewModel
-                  child: _viewModel.athleteVideoController != null &&
-                          _viewModel
-                              .athleteVideoController!.value.isInitialized
-                      ? AspectRatio(
-                          aspectRatio: _viewModel
-                              .athleteVideoController!.value.aspectRatio,
-                          child: VideoPlayer(_viewModel.athleteVideoController!),
-                        )
-                      : TextButton.icon(
-                          icon: Icon(Icons.upload_file,
-                              color: theme.colorScheme.primary),
-                          label: Text(
-                            'Select Your Video',
-                            style: TextStyle(color: theme.colorScheme.primary),
-                          ),
-                          onPressed: _viewModel.pickAthleteVideo, // Call ViewModel
-                        ),
-                ),
-              ),
-              if (_viewModel.athleteVideoFile != null)
-                TextButton(
-                  onPressed: _viewModel.pickAthleteVideo, // Call ViewModel
-                  child: const Text('Change Video'),
-                ),
-              const SizedBox(height: 20),
-
-              // --- Mark as Done Button ---
-              OutlinedButton.icon(
-                // Read from ViewModel
-                onPressed: _viewModel.isUploading ? null : _markAsDone,
-                icon: _viewModel.isUploading
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.check_circle_outline),
-                label: Text(_viewModel.isUploading
-                    ? 'Submitting...'
-                    : 'I Finished! Submit for Review'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.green[400],
-                  side: BorderSide(color: Colors.green[400]!, width: 2),
-                  padding: const EdgeInsets.symmetric(vertical: 15),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
-                ),
-              ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              colorScheme.surface,
+              Color.lerp(colorScheme.surface, colorScheme.primary, 0.05) ?? Colors.grey[50]!,
             ],
-            const SizedBox(height: 40),
-          ],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // --- Coach's Video Player ---
+                _buildCoachVideoSection(context),
+                const SizedBox(height: 24),
+
+                // --- Drill Instructions ---
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerLowest,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.flag_rounded, color: colorScheme.primary, size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Goal',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _viewModel.drillGoal.isEmpty ? "No description provided." : _viewModel.drillGoal,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // --- Timer/Counter Display ---
+                _buildTimerCard(context),
+                const SizedBox(height: 32),
+
+                // --- Action Buttons ---
+                _buildActionButton(colorScheme),
+                const SizedBox(height: 32),
+
+                // --- Athlete's Submission Section ---
+                if (!_viewModel.isCompleted) _buildSubmissionSection(context),
+                
+                const SizedBox(height: 40),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  // Helper, can be moved to a utils file
+  // --- Helper Widgets ---
+
+  Widget _buildCoachVideoSection(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            "Coach's Example",
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+            ),
+          ),
+        ),
+        Container(
+          height: 220,
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                _viewModel.isCoachVideoInitialized
+                    ? AspectRatio(
+                        aspectRatio: _viewModel.coachVideoController!.value.aspectRatio,
+                        child: VideoPlayer(_viewModel.coachVideoController!),
+                      )
+                    : _viewModel.coachVideoUrl.isEmpty
+                        ? Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.videocam_off_outlined,
+                                  size: 48, color: Colors.white.withOpacity(0.5)),
+                              const SizedBox(height: 8),
+                              Text('No Example Video',
+                                  style: TextStyle(color: Colors.white.withOpacity(0.5))),
+                            ],
+                          )
+                        : const CircularProgressIndicator(color: Colors.white),
+                
+                // Play/Pause Overlay
+                if (_viewModel.isCoachVideoInitialized)
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        setState(() {
+                          _viewModel.coachVideoController!.value.isPlaying
+                              ? _viewModel.coachVideoController!.pause()
+                              : _viewModel.coachVideoController!.play();
+                        });
+                      },
+                      child: Container(
+                        color: Colors.black.withOpacity(0.2),
+                        child: Center(
+                          child: Icon(
+                            _viewModel.coachVideoController!.value.isPlaying
+                                ? Icons.pause_circle_filled_rounded
+                                : Icons.play_circle_fill_rounded,
+                            size: 64,
+                            color: Colors.white.withOpacity(0.8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimerCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final bool isLowTime = _viewModel.currentTime < 10 && _viewModel.currentTime > 0;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'TIME REMAINING',
+            style: TextStyle(
+              fontSize: 12,
+              letterSpacing: 1.5,
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _formatTime(_viewModel.currentTime),
+            style: TextStyle(
+              fontSize: 80,
+              fontWeight: FontWeight.w900,
+              fontFamily: 'monospace', // Use monospace for stable numbers
+              height: 1.0,
+              color: isLowTime ? colorScheme.error : colorScheme.primary,
+              shadows: isLowTime ? [
+                BoxShadow(color: colorScheme.error.withOpacity(0.4), blurRadius: 20)
+              ] : null,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSubmissionSection(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: colorScheme.primaryContainer,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.upload_rounded, size: 20, color: colorScheme.primary),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Your Submission',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  'Record yourself performing the drill',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        
+        // Video Picker / Preview
+        Container(
+          height: 180,
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
+            // Dotted border effect can be simulated with CustomPaint, but keeping it simple for now
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                if (_viewModel.athleteVideoController != null &&
+                    _viewModel.athleteVideoController!.value.isInitialized)
+                  AspectRatio(
+                    aspectRatio: _viewModel.athleteVideoController!.value.aspectRatio,
+                    child: VideoPlayer(_viewModel.athleteVideoController!),
+                  )
+                else
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _viewModel.pickAthleteVideo,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.video_call_rounded,
+                                size: 48, color: colorScheme.primary),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Tap to Record / Upload',
+                              style: TextStyle(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  // Change button overlay if video exists
+                  if (_viewModel.athleteVideoFile != null)
+                     Positioned(
+                       bottom: 8,
+                       right: 8,
+                       child: IconButton.filledTonal(
+                         onPressed: _viewModel.pickAthleteVideo, 
+                         icon: const Icon(Icons.edit),
+                         tooltip: "Change Video",
+                       ),
+                     ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // Submit Button
+        SizedBox(
+          width: double.infinity,
+          height: 55,
+          child: FilledButton.icon(
+            onPressed: _viewModel.isUploading ? null : _markAsDone,
+            icon: _viewModel.isUploading
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.check_circle_rounded),
+            label: Text(_viewModel.isUploading ? 'Uploading...' : 'Submit Drill'),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.green[600],
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   String _formatTime(int seconds) {
     final minutes = (seconds ~/ 60).toString().padLeft(2, '0');
     final remainingSeconds = (seconds % 60).toString().padLeft(2, '0');

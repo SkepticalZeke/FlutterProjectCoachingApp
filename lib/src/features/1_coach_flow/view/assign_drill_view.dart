@@ -5,7 +5,11 @@ import '../viewmodel/assign_drill_viewmodel.dart';
 
 /*
   VIEW (V)
-  This is the UI. It is "dumb" and only talks to the ViewModel.
+  Refactored AssignDrillView with:
+  - Custom Card UI with Gradients
+  - "Chip" style tags for Skills and XP
+  - Modern background styling
+  - Enhanced visual feedback
 */
 class AssignDrillView extends StatefulWidget {
   final Map<String, dynamic> athleteData;
@@ -45,10 +49,27 @@ class _AssignDrillViewState extends State<AssignDrillView> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(success
-              ? 'Assigned "${drillData['name']}" to ${widget.athleteData['name']}!'
-              : 'Error assigning drill.'),
-          backgroundColor: success ? Colors.green : Colors.red,
+          content: Row(
+            children: [
+              Icon(
+                success ? Icons.check_circle : Icons.error_outline,
+                color: Colors.white,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  success
+                      ? 'Assigned "${drillData['name']}" to ${widget.athleteData['name']}!'
+                      : 'Error assigning drill.',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: success ? Colors.green.shade600 : Colors.red.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          margin: const EdgeInsets.all(16),
         ),
       );
       if (success) {
@@ -57,91 +78,263 @@ class _AssignDrillViewState extends State<AssignDrillView> {
     }
   }
 
-  // 4. Build method is "dumb"
+  // 4. Build method
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
+      extendBodyBehindAppBar: true, // Allows gradient to go behind AppBar
       appBar: AppBar(
-        title: Text('Assign Drill to ${widget.athleteData['name']}'),
+        title: Text(
+          'Assign to ${widget.athleteData['name']}',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent, // Transparent for gradient effect
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                colorScheme.surface.withOpacity(0.9),
+                colorScheme.surface.withOpacity(0.0),
+              ],
+            ),
+          ),
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadDrills,
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            decoration: BoxDecoration(
+              color: colorScheme.surface.withOpacity(0.5),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _loadDrills,
+              tooltip: "Refresh Drills",
+            ),
           )
         ],
       ),
-      // 5. Wrap in RefreshIndicator
-      body: RefreshIndicator(
-        onRefresh: () async => _loadDrills(),
-        // 6. Use FutureBuilder instead of StreamBuilder
-        child: FutureBuilder<List<Map<String, dynamic>>>(
-          future: _drillsFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
-            }
+      // 5. Wrap in Container for Background Gradient
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              colorScheme.surface,
+              Color.lerp(colorScheme.surface, colorScheme.primary, 0.08) ?? Colors.grey[100]!,
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: () async => _loadDrills(),
+            // 6. Use FutureBuilder
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _drillsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline, size: 48, color: colorScheme.error),
+                        const SizedBox(height: 16),
+                        Text('Something went wrong loading drills.', style: theme.textTheme.bodyLarge),
+                        TextButton(onPressed: _loadDrills, child: const Text("Try Again"))
+                      ],
+                    ),
+                  );
+                }
 
-            final drills = snapshot.data ?? [];
+                final drills = snapshot.data ?? [];
 
-            if (drills.isEmpty) {
-              return Center(
-                child: SingleChildScrollView(
+                if (drills.isEmpty) {
+                  return Center(
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.video_call_outlined,
+                                size: 64,
+                                color: colorScheme.onSurface.withOpacity(0.5)),
+                          ),
+                          const SizedBox(height: 24),
+                          Text(
+                            'No Custom Drills Found',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onSurface.withOpacity(0.8),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Go back and create one first!',
+                            style: TextStyle(
+                                color: colorScheme.onSurface.withOpacity(0.6)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                // 7. We have drills! Build the modern list.
+                return ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+                  itemCount: drills.length,
                   physics: const AlwaysScrollableScrollPhysics(),
+                  itemBuilder: (context, index) {
+                    final drillData = drills[index];
+                    return _buildDrillCard(context, drillData, theme, colorScheme);
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper widget to build the modern card
+  Widget _buildDrillCard(BuildContext context, Map<String, dynamic> drillData, ThemeData theme, ColorScheme colorScheme) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withOpacity(0.08),
+            offset: const Offset(0, 4),
+            blurRadius: 12,
+            spreadRadius: 0,
+          ),
+        ],
+        border: Border.all(
+          color: colorScheme.outlineVariant.withOpacity(0.4),
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _assignDrill(drillData),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Icon Box
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.play_circle_fill_rounded,
+                    color: colorScheme.primary,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                
+                // Content
+                Expanded(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.video_call_outlined,
-                          size: 60,
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
-                      const SizedBox(height: 10),
-                      const Text('No custom drills found.'),
                       Text(
-                        'Go back and create one first!',
-                        style: TextStyle(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.7)),
+                        drillData['name'] ?? 'Unnamed Drill',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Chips Row
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          _buildInfoChip(
+                            theme, 
+                            drillData['skillFocus'] ?? 'General', 
+                            Icons.bolt,
+                            Colors.orange,
+                          ),
+                          _buildInfoChip(
+                            theme, 
+                            "${drillData['xp'] ?? 0} XP", 
+                            Icons.star_rounded,
+                            Colors.amber,
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-              );
-            }
-
-            // 7. We have drills! Build the list.
-            return ListView.builder(
-              padding: const EdgeInsets.all(10),
-              itemCount: drills.length,
-              physics: const AlwaysScrollableScrollPhysics(),
-              itemBuilder: (context, index) {
-                final drillData = drills[index];
-                // Note: drillData already contains 'id' from the repository mapping
-
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  child: ListTile(
-                    leading: Icon(Icons.video_library,
-                        color: theme.colorScheme.primary),
-                    title: Text(
-                      drillData['name'] ?? 'Unnamed Drill',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(
-                      'Skill: ${drillData['skillFocus']} | XP: ${drillData['xp']}',
-                    ),
-                    trailing: const Icon(Icons.add_task),
-                    onTap: () {
-                      _assignDrill(drillData);
-                    },
+                
+                // Action Arrow
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: colorScheme.secondaryContainer.withOpacity(0.5),
+                    shape: BoxShape.circle,
                   ),
-                );
-              },
-            );
-          },
+                  child: Icon(
+                    Icons.add_rounded,
+                    color: colorScheme.onSecondaryContainer,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildInfoChip(ThemeData theme, String label, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color.withOpacity(0.8)),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: color.withOpacity(0.8),
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }

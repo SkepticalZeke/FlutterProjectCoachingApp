@@ -15,10 +15,11 @@
  */
 
 import * as functions from 'firebase-functions';
+import { onRequest } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 
-// Import configuration
-import { validateConfig } from './config';
+// Import configuration (includes secret definitions)
+import { encryptionKeySecret, config } from './config';
 
 // Import Express app
 import app from './app';
@@ -30,18 +31,11 @@ import app from './app';
 admin.initializeApp();
 const db = admin.firestore();
 
-// Validate configuration on cold start
-try {
-  validateConfig();
-} catch (error) {
-  console.error('Configuration validation error:', error);
-}
-
 // =============================================================================
 // Region Configuration
 // =============================================================================
 
-const region = functions.region('asia-southeast1');
+const region = functions.region(config.region);
 
 // =============================================================================
 // HTTP API (Express.js wrapped in Cloud Function)
@@ -52,8 +46,16 @@ const region = functions.region('asia-southeast1');
  * All HTTP requests are handled by Express.js
  * 
  * Base URL: https://asia-southeast1-fitness-coaching-app-5633f.cloudfunctions.net/api
+ * 
+ * Uses Firebase Secrets for the encryption key
  */
-export const api = region.https.onRequest(app);
+export const api = onRequest(
+  {
+    region: config.region,
+    secrets: [encryptionKeySecret], // Inject secret at runtime
+  },
+  app
+);
 
 // =============================================================================
 // Scheduled Functions

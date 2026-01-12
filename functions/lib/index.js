@@ -1,16 +1,99 @@
 "use strict";
+/**
+ * Firebase Cloud Functions Entry Point
+ *
+ * This file exports all Cloud Functions for the Fitness Coaching App
+ *
+ * Architecture:
+ * - Express.js API wrapped in onRequest for HTTP endpoints
+ * - Independent microservices for different business domains
+ * - Firestore triggers for real-time updates
+ * - Scheduled functions for periodic tasks
+ *
+ * Project: fitness-coaching-app-5633f
+ * Region: asia-southeast1 (Singapore)
+ * Runtime: Node.js 22 with TypeScript
+ */
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onAthleteUpdate = exports.onDrillUpdate = exports.checkAthleteProgress = void 0;
-const functions = require("firebase-functions");
-const admin = require("firebase-admin");
-// Initialize the Firebase Admin SDK
+exports.onAthleteUpdate = exports.onDrillUpdate = exports.checkAthleteProgress = exports.api = void 0;
+const functions = __importStar(require("firebase-functions"));
+const https_1 = require("firebase-functions/v2/https");
+const admin = __importStar(require("firebase-admin"));
+// Import configuration (includes secret definitions)
+const config_1 = require("./config");
+// Import Express app
+const app_1 = __importDefault(require("./app"));
+// =============================================================================
+// Initialize Firebase Admin SDK
+// =============================================================================
 admin.initializeApp();
 const db = admin.firestore();
-// Scheduled function to periodically check athlete progress
-exports.checkAthleteProgress = functions.pubsub
+// =============================================================================
+// Region Configuration
+// =============================================================================
+const region = functions.region(config_1.config.region);
+// =============================================================================
+// HTTP API (Express.js wrapped in Cloud Function)
+// =============================================================================
+/**
+ * Main API endpoint
+ * All HTTP requests are handled by Express.js
+ *
+ * Base URL: https://asia-southeast1-fitness-coaching-app-5633f.cloudfunctions.net/api
+ *
+ * Uses Firebase Secrets for the encryption key
+ */
+exports.api = (0, https_1.onRequest)({
+    region: config_1.config.region,
+    secrets: [config_1.encryptionKeySecret], // Inject secret at runtime
+}, app_1.default);
+// =============================================================================
+// Scheduled Functions
+// =============================================================================
+/**
+ * Check Athlete Progress
+ * Runs every 30 minutes during active hours to remind athletes of pending drills
+ */
+exports.checkAthleteProgress = region.pubsub
     .schedule('every 30 minutes from 06:00 to 00:00')
-    .timeZone('America/New_York')
-    .onRun(async (context) => {
+    .timeZone('Asia/Singapore') // Updated for singapore region
+    .onRun(async () => {
     console.log('Checking athlete progress...');
     try {
         // Get all athletes from Firestore
@@ -36,14 +119,20 @@ exports.checkAthleteProgress = functions.pubsub
         throw new functions.https.HttpsError('internal', 'Failed to check athlete progress');
     }
 });
-// Firestore trigger for real-time checks when drills are updated
-exports.onDrillUpdate = functions.firestore
+// =============================================================================
+// Firestore Triggers
+// =============================================================================
+/**
+ * On Drill Update Trigger
+ * Fires when any drill document is created, updated, or deleted
+ */
+exports.onDrillUpdate = region.firestore
     .document('drills/{drillId}')
     .onWrite(async (change, context) => {
     const beforeData = change.before.data();
     const afterData = change.after.data();
     // Check if drill was completed
-    if ((beforeData === null || beforeData === void 0 ? void 0 : beforeData.completed) === false && (afterData === null || afterData === void 0 ? void 0 : afterData.completed) === true) {
+    if (beforeData?.completed === false && afterData?.completed === true) {
         console.log(`Drill ${context.params.drillId} marked as completed`);
         // Update athlete's progress
         if (afterData && afterData.athleteId) {
@@ -53,7 +142,7 @@ exports.onDrillUpdate = functions.firestore
         }
     }
     // Check if drill status changed to "Pending Review"
-    if ((beforeData === null || beforeData === void 0 ? void 0 : beforeData.status) !== 'Pending Review' && (afterData === null || afterData === void 0 ? void 0 : afterData.status) === 'Pending Review') {
+    if (beforeData?.status !== 'Pending Review' && afterData?.status === 'Pending Review') {
         console.log(`Drill ${context.params.drillId} is pending review`);
         // Send notification to coach
         if (afterData && afterData.athleteId) {
@@ -61,14 +150,17 @@ exports.onDrillUpdate = functions.firestore
         }
     }
 });
-// Firestore trigger for athlete updates
-exports.onAthleteUpdate = functions.firestore
+/**
+ * On Athlete Update Trigger
+ * Fires when an athlete document is updated
+ */
+exports.onAthleteUpdate = region.firestore
     .document('athletes/{athleteId}')
     .onWrite(async (change, context) => {
     const beforeData = change.before.data();
     const afterData = change.after.data();
     // Check if streak has changed
-    if ((beforeData === null || beforeData === void 0 ? void 0 : beforeData.streak) !== (afterData === null || afterData === void 0 ? void 0 : afterData.streak) && (afterData === null || afterData === void 0 ? void 0 : afterData.streak)) {
+    if (beforeData?.streak !== afterData?.streak && afterData?.streak) {
         console.log(`Athlete ${context.params.athleteId} streak updated to ${afterData.streak}`);
         // Send achievement notification if streak milestone reached
         if (afterData.streak % 7 === 0) { // Every week streak
@@ -76,12 +168,17 @@ exports.onAthleteUpdate = functions.firestore
         }
     }
     // Check if level has changed
-    if ((beforeData === null || beforeData === void 0 ? void 0 : beforeData.level) !== (afterData === null || afterData === void 0 ? void 0 : afterData.level) && (afterData === null || afterData === void 0 ? void 0 : afterData.level)) {
+    if (beforeData?.level !== afterData?.level && afterData?.level) {
         console.log(`Athlete ${context.params.athleteId} leveled up to ${afterData.level}`);
         await sendNotification(context.params.athleteId, `Level up! You're now level ${afterData.level}!`, 'level_up');
     }
 });
-// Helper function to update athlete progress
+// =============================================================================
+// Helper Functions
+// =============================================================================
+/**
+ * Update athlete progress statistics
+ */
 async function updateAthleteProgress(athleteId) {
     try {
         const athleteRef = db.collection('athletes').doc(athleteId);
@@ -118,7 +215,9 @@ async function updateAthleteProgress(athleteId) {
         throw error;
     }
 }
-// Helper function to notify coach of drill completion
+/**
+ * Notify coach when an athlete completes a drill
+ */
 async function notifyCoachOfCompletion(athleteId, drillId) {
     try {
         // Get athlete and coach info
@@ -126,9 +225,8 @@ async function notifyCoachOfCompletion(athleteId, drillId) {
         if (!athleteDoc.exists)
             return;
         const athleteData = athleteDoc.data();
-        const coachId = athleteData.coachId; // Assuming athletes have a coachId field
+        const coachId = athleteData.coachId;
         if (coachId) {
-            // In a real implementation, you would send a push notification or email
             console.log(`Notifying coach ${coachId} about drill ${drillId} completion by athlete ${athleteId}`);
             // Add notification to Firestore for the coach
             await db.collection('notifications').add({
@@ -147,10 +245,11 @@ async function notifyCoachOfCompletion(athleteId, drillId) {
         throw error;
     }
 }
-// Helper function to send notification to athlete
+/**
+ * Send notification to a user
+ */
 async function sendNotification(userId, message, type) {
     try {
-        // Add notification to Firestore
         await db.collection('notifications').add({
             userId: userId,
             type: type,
@@ -165,7 +264,9 @@ async function sendNotification(userId, message, type) {
         throw error;
     }
 }
-// Helper function to send notification to coach
+/**
+ * Send notification to an athlete's coach
+ */
 async function sendNotificationToCoach(athleteId, message, type) {
     try {
         const athleteDoc = await db.collection('athletes').doc(athleteId).get();

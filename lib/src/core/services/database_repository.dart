@@ -147,6 +147,8 @@ class DatabaseRepository {
       'notes': notes,
     });
   }
+  
+  
 
   // Sets an athlete's status to a rest day
   Future<void> addRestDay(String athleteId) async {
@@ -391,5 +393,25 @@ class DatabaseRepository {
         'unlockedItems': FieldValue.arrayUnion([itemId])
       });
     });
+  }
+
+
+  Future<void> updateAthleteProfile({
+    required String athleteId,
+    String? newName,
+    String? newPin,
+  }) async {
+    final Map<String, dynamic> updates = {};
+
+    if (newName != null && newName.isNotEmpty) {
+      updates['name'] = newName;
+    }
+    if (newPin != null && newPin.isNotEmpty) {
+      updates['pin'] = newPin;
+    }
+
+    if (updates.isNotEmpty) {
+      await _firestore.collection('athletes').doc(athleteId).update(updates);
+    }
   }
 }

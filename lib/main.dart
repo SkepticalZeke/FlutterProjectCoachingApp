@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart'; // ⭐️ MOVED TO lib/ ⭐️
+import 'platform_options.dart'; // ⭐️ MOVED TO lib/ ⭐️
 
 // --- Screen Imports Updated to new MVVM structure ---
 import 'src/features/0_auth/view/splash_view.dart';

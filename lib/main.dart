@@ -25,7 +25,7 @@ import 'src/features/1_coach_flow/view/review_submission_view.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+    options: PlatformSwitch.currentPlatform,
   );
   runApp(const CoachFitnessApp());
 }

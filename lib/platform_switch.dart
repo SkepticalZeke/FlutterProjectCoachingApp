@@ -1,8 +1,8 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, TargetPlatform, kIsWeb;
+import 'package:firebase_core/firebase_core.dart';
 
-class DefaultFirebaseOptions {
+class PlatformSwitch {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
       return web;

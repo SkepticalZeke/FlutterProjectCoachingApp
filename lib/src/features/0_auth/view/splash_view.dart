@@ -24,18 +24,46 @@ class _SplashViewState extends State<SplashView> {
   @override
   void initState() {
     super.initState();
-    // 1. Listen for the *first* authentication state change
-    _viewModel.authStateChanges.listen((User? user) {
-      // 2. Only navigate if the widget is mounted and we haven't gone anywhere
+    // Initialize the view model (loads session service)
+    _initializeAndNavigate();
+  }
+
+  Future<void> _initializeAndNavigate() async {
+    try {
+      // Initialize the view model's auth repository and session service
+      await _viewModel.init();
+
+      // 1. Listen for the *first* authentication state change
+      _viewModel.authStateChanges.listen((User? user) async {
+        // 2. Only navigate if the widget is mounted and we haven't gone anywhere
+        if (mounted && !_hasNavigated) {
+          _hasNavigated = true;
+          // 3. Get the correct route from the ViewModel
+          final route = await _viewModel.getInitialRoute(user);
+          
+          // 4. Navigate with arguments if it's an athlete session recovery
+          if (route == '/athlete-home') {
+            final athleteData = await _viewModel.getSavedAthleteData();
+            if (mounted) {
+              Navigator.of(context).pushReplacementNamed(
+                route,
+                arguments: athleteData,
+              );
+            }
+          } else {
+            if (mounted) {
+              Navigator.of(context).pushReplacementNamed(route);
+            }
+          }
+        }
+      });
+    } catch (e) {
+      // If there's an error, go to role selection
       if (mounted && !_hasNavigated) {
         _hasNavigated = true;
-        // 3. Get the correct route from the ViewModel
-        final route = _viewModel.getInitialRoute(user);
-        
-        // 4. Navigate and clear the navigation stack
-        Navigator.of(context).pushReplacementNamed(route);
+        Navigator.of(context).pushReplacementNamed('/role-selection');
       }
-    });
+    }
   }
 
   @override

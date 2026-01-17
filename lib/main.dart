@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'platform_options.dart'; // ⭐️ MOVED TO lib/ ⭐️
+import 'src/core/services/auth_repository.dart';
 
 // --- Screen Imports Updated to new MVVM structure ---
 import 'src/features/0_auth/view/splash_view.dart';
@@ -27,6 +28,9 @@ void main() async {
   await Firebase.initializeApp(
     options: PlatformSwitchOptions.currentPlatform,
   );
+  // Initialize AuthRepository with session service
+  final authRepo = AuthRepository();
+  await authRepo.init();
   runApp(const CoachFitnessApp());
 }
 

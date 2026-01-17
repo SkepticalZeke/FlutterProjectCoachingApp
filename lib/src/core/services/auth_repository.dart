@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'session_service.dart';
 
 /*
   MODEL (M)
@@ -8,6 +9,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 */
 class AuthRepository {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final SessionService _sessionService = SessionService();
+
+  // Initialize session service
+  Future<void> init() async {
+    await _sessionService.init();
+  }
 
   // Registers a new coach with email and password
   // Returns the new User object on success, or throws an error
@@ -45,6 +52,8 @@ class AuthRepository {
   Future<void> signOut() async {
     try {
       await _auth.signOut();
+      // Also clear the session data
+      await _sessionService.clearSession();
     } catch (e) {
       throw Exception('An error occurred during sign out: $e');
     }
@@ -55,4 +64,31 @@ class AuthRepository {
 
   // Stream for authentication state changes
   Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  // ===== SESSION MANAGEMENT =====
+
+  /// Save athlete session
+  Future<void> saveAthleteSession(Map<String, dynamic> athleteData) async {
+    await _sessionService.saveAthleteSession(athleteData);
+  }
+
+  /// Save coach session
+  Future<void> saveCoachSession() async {
+    await _sessionService.saveCoachSession();
+  }
+
+  /// Get saved user type from session
+  Future<String?> getSavedUserType() async {
+    return await _sessionService.getUserType();
+  }
+
+  /// Get saved athlete data from session
+  Future<Map<String, dynamic>?> getSavedAthleteData() async {
+    return await _sessionService.getAthleteData();
+  }
+
+  /// Check if there's an active session
+  Future<bool> isSessionActive() async {
+    return await _sessionService.isSessionActive();
+  }
 }

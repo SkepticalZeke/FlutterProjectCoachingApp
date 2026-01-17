@@ -19,6 +19,11 @@ class CoachLoginViewModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  // Initialize session service
+  Future<void> init() async {
+    await _authRepo.init();
+  }
+
   // 4. Logic
   Future<bool> loginCoach({
     required String email,
@@ -32,7 +37,14 @@ class CoachLoginViewModel extends ChangeNotifier {
       final User? user = await _authRepo.loginCoachWithEmail(email, password);
 
       if (user != null) {
-        // Success
+        // Success - save the session
+        try {
+          await _authRepo.saveCoachSession();
+        } catch (e) {
+          // Log warning but don't fail login if session save fails
+          print('Warning: Failed to save session: $e');
+        }
+        
         _setLoading(false);
         return true;
       } else {

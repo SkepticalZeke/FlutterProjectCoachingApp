@@ -30,24 +30,25 @@ class PlatformSwitchOptions {
     measurementId: "G-TYV1NY9Z02"
   );
 
-  // ⭐️ FIX: Added placeholder for ANDROID
-  // This allows the app to compile on mobile
+  // ⭐️ ANDROID Configuration
+  // These values should match your Firebase project
+  // Get these from Firebase Console > Project Settings > Service Accounts > Android
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'YOUR_API_KEY', // Placeholder
-    appId: 'YOUR_APP_ID', // Placeholder
-    messagingSenderId: 'YOUR_SENDER_ID', // Placeholder
-    projectId: 'coachfitness676767',
-    storageBucket: 'coachfitness676767.firebasestorage.app',
+    apiKey: 'AIzaSyB0cy2Ss1f5jSsvoSeTA8sXi-0jGP_oVK0', // From google-services.json or Firebase Console
+    appId: '1:150046979522:android:93a562a09cda9ed6d7925b', // Replace with actual Android App ID
+    messagingSenderId: '150046979522',
+    projectId: 'fitness-coaching-app-5633f',
+    storageBucket: 'fitness-coaching-app-5633f.firebasestorage.app',
   );
 
-  // ⭐️ FIX: Added placeholder for IOS
-  // This allows the app to compile on mobile
+  // ⭐️ iOS Configuration
+  // These values should match your Firebase project
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'YOUR_API_KEY', // Placeholder
-    appId: 'YOUR_APP_ID', // Placeholder
-    messagingSenderId: 'YOUR_SENDER_ID', // Placeholder
-    projectId: 'coachfitness676767',
-    storageBucket: 'coachfitness676767.firebasestorage.app',
-    iosBundleId: 'com.example.coachFitnessApp', // Placeholder
+    apiKey: 'AIzaSyB0cy2Ss1f5jSsvoSeTA8sXi-0jGP_oVK0',
+    appId: '1:150046979522:ios:93a562a09cda9ed6d7925b', // Replace with actual iOS App ID
+    messagingSenderId: '150046979522',
+    projectId: 'fitness-coaching-app-5633f',
+    storageBucket: 'fitness-coaching-app-5633f.firebasestorage.app',
+    iosBundleId: 'com.example.coachFitnessApp',
   );
 }

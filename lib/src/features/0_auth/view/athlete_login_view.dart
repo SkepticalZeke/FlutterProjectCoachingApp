@@ -24,7 +24,9 @@ class _AthleteLoginViewState extends State<AthleteLoginView> {
   @override
   void initState() {
     super.initState();
-    // 2. Listen for changes
+    // 2. Initialize the ViewModel (initializes auth/session services)
+    _viewModel.init();
+    // 3. Listen for changes
     _viewModel.addListener(_onViewModelChanged);
   }
 

@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 // Import our Model
 import '../../../core/services/database_repository.dart';
+import '../../../core/services/auth_repository.dart';
 
 /*
   VIEW-MODEL (VM)
   This is the "brain" for the Athlete Login View.
 */
 class AthleteLoginViewModel extends ChangeNotifier {
-  // 1. Import the repository
+  // 1. Import the repositories
   final DatabaseRepository _dbRepo = DatabaseRepository();
+  final AuthRepository _authRepo = AuthRepository();
 
   // 2. State
   bool _isLoading = false;
@@ -17,6 +19,11 @@ class AthleteLoginViewModel extends ChangeNotifier {
   // 3. Getters
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+
+  // Initialize session service
+  Future<void> init() async {
+    await _authRepo.init();
+  }
 
   // 4. Logic
   // Tries to log in. Returns the athlete's data map if successful,
@@ -34,7 +41,14 @@ class AthleteLoginViewModel extends ChangeNotifier {
           await _dbRepo.getAthleteByNameAndPin(name, pin);
 
       if (athleteData != null) {
-        // Success
+        // Success - save the session
+        try {
+          await _authRepo.saveAthleteSession(athleteData);
+        } catch (e) {
+          // Log warning but don't fail login if session save fails
+          print('Warning: Failed to save session: $e');
+        }
+        
         _setLoading(false);
         return athleteData;
       } else {

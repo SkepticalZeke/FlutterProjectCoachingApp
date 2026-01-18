@@ -12,22 +12,20 @@ class DatabaseRepository {
 
   // --- WRITES: MOVED TO CLOUD RUN ---
 
-  // Creates the coach doc and their first athlete doc
-  Future<void> createCoachAndFirstAthlete({
-    required String coachUid,
-    required String coachEmail,
-    required String athleteName,
-    required String athletePin,
+Future<void> createCoachProfile({
+    required String uid,
+    required String name,
+    required String email,
   }) async {
-    // Logic moved to backend endpoint: POST /api/coach/setup
-    await _api.post('/api/coach/setup', {
-      'coachUid': coachUid,
-      'coachEmail': coachEmail,
-      'athleteName': athleteName,
-      'athletePin': athletePin,
+    // We utilize the API Service to send data to the server
+    // Note: authRequired is true by default, which is correct because 
+    // the user is logged in immediately after registration.
+    await _api.post('/api/coach/create-profile', {
+      'uid': uid,
+      'name': name,
+      'email': email,
     });
   }
-
   // Registers a new athlete with the coach
   Future<Athlete?> registerNewAthlete({
     required String name,
@@ -271,5 +269,25 @@ class DatabaseRepository {
       print("Error fetching coach drills: $e");
       return [];
     }
+  }
+
+  Future<Map<String, dynamic>> registerAthleteSelf({
+    required String username,
+    required String pin,
+  }) async {
+    // Note: authRequired: false because they aren't logged in yet
+    final response = await _api.post('/auth/athlete/register-self', {
+      'username': username,
+      'pin': pin,
+    }, authRequired: false);
+    
+    return Map<String, dynamic>.from(response);
+  }
+
+  // 2. New: Coach Linking Logic
+  Future<void> linkAthlete(String connectionCode) async {
+    await _api.post('/api/coach/link-athlete', {
+      'connectionCode': connectionCode,
+    });
   }
 }

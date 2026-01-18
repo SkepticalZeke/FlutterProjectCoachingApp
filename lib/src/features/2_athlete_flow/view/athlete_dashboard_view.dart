@@ -183,10 +183,15 @@ class _AthleteDashboardViewState extends State<AthleteDashboardView> {
     );
   }
 
+// ⭐️ UPDATED SECTION: Displays Username, then Display Name, then Code
   Widget _buildAvatarSection(
       BuildContext context, Map<String, dynamic> athleteData) {
     final theme = Theme.of(context);
-    final String athleteName = athleteData['name'] ?? 'Athlete';
+
+    // Data Extraction
+    final String username = athleteData['username'] ?? ''; // Extract Username
+    final String athleteName = athleteData['name'] ?? 'Athlete'; // Display Name
+    final String connectionCode = athleteData['connectionCode'] ?? '----';
     final String skillFocus = athleteData['skill_focus'] ?? 'General';
     final double currentXp = (athleteData['currentXp'] ?? 0.0).toDouble();
     final double requiredXp = (athleteData['requiredXp'] ?? 1000.0).toDouble();
@@ -197,9 +202,9 @@ class _AthleteDashboardViewState extends State<AthleteDashboardView> {
       children: [
         InkWell(
           onTap: () async {
-             await Navigator.of(context)
+            await Navigator.of(context)
                 .pushNamed('/avatar', arguments: athleteData);
-             _loadData(); // Refresh on return
+            _loadData(); // Refresh on return
           },
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 20),
@@ -218,25 +223,64 @@ class _AthleteDashboardViewState extends State<AthleteDashboardView> {
                         size: 50, color: theme.colorScheme.onPrimary),
                   ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      athleteName,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 1. USERNAME (Login ID) - Top
+                      Text(
+                        '@$username', 
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    Text(
-                      'Focus: $skillFocus',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                      
+                      // 2. DISPLAY NAME - Below Username
+                      Text(
+                        athleteName,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                          height: 1.1, // Slight line height adjustment
+                        ),
                       ),
-                    ),
-                  ],
+
+                      const SizedBox(height: 6),
+
+                      // 3. CONNECTION CODE
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                            color: theme.colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                                color: theme.colorScheme.primary
+                                    .withValues(alpha: 0.3))),
+                        child: Text(
+                          'CODE: $connectionCode',
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.5,
+                              color: theme.colorScheme.onPrimaryContainer),
+                        ),
+                      ),
+
+                      const SizedBox(height: 4),
+
+                      // 4. FOCUS
+                      Text(
+                        'Focus: $skillFocus',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface
+                              .withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const Spacer(),
                 Padding(
                   padding: const EdgeInsets.only(right: 15.0),
                   child: Icon(Icons.chevron_right,
@@ -255,7 +299,7 @@ class _AthleteDashboardViewState extends State<AthleteDashboardView> {
       ],
     );
   }
-
+  
   // 7. Replaced StreamBuilder with FutureBuilder for Drills
   Widget _buildActivityList(
       BuildContext context, Map<String, dynamic> athleteData) {

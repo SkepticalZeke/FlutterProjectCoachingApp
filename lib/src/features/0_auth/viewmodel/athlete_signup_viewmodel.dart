@@ -1,63 +1,47 @@
 import 'package:flutter/material.dart';
-// Import our Models
-import '../../../core/models/athlete.dart';
-import '../../../core/services/database_repository.dart';
+import '../../../core/services/api_service.dart';
 
-/*
-  VIEW-MODEL (VM)
-  This is the "brain" for the Athlete Signup View.
-*/
 class AthleteSignupViewModel extends ChangeNotifier {
-  // 1. Repositories
-  final DatabaseRepository _dbRepo = DatabaseRepository();
-
-  // 2. State
+  final ApiService _api = ApiService();
+  
   bool _isLoading = false;
   String? _errorMessage;
+  Map<String, dynamic>? _registeredAthleteData;
 
-  // 3. Getters
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  Map<String, dynamic>? get registeredAthleteData => _registeredAthleteData;
 
-  // 4. Logic
-  Future<Athlete?> registerAthlete({
-    required String name,
+  Future<bool> registerSelf({
+    required String displayName, // <--- NEW PARAMETER
+    required String username,
     required String pin,
-    required String coachEmail,
   }) async {
-    _setLoading(true);
-    _clearError();
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
 
     try {
-      // Step 1: Call the Database Repository to create the athlete
-      final newAthlete = await _dbRepo.registerNewAthlete(
-        name: name,
-        pin: pin,
-        coachEmail: coachEmail,
+      final response = await _api.post(
+        '/auth/athlete/register-self', 
+        {
+          'displayName': displayName, // <--- Send to Server
+          'username': username, 
+          'pin': pin
+        }, 
+        authRequired: false 
       );
 
-      _setLoading(false);
-      return newAthlete; // Success, return the new Athlete object
+      _registeredAthleteData = response;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+
     } catch (e) {
-      // Handle errors (e.g., "Coach not found")
-      _setError(e.toString());
-      _setLoading(false);
-      return null; // Failed
+      _errorMessage = e.toString().replaceAll('Exception:', '').trim();
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
-  }
-
-  // 5. Helper functions
-  void _setLoading(bool loading) {
-    _isLoading = loading;
-    notifyListeners();
-  }
-
-  void _setError(String? message) {
-    _errorMessage = message;
-    notifyListeners();
-  }
-
-  void _clearError() {
-    _errorMessage = null;
   }
 }

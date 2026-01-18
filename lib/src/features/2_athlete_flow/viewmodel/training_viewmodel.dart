@@ -1,28 +1,29 @@
 import 'package:flutter/material.dart';
-// Import our Model
 import '../../../core/services/database_repository.dart';
 
-/*
-  VIEW-MODEL (VM)
-  This is the "brain" for the Athlete's Training View.
-*/
 class TrainingViewModel extends ChangeNotifier {
-  // 1. Repositories
   final DatabaseRepository _dbRepo = DatabaseRepository();
 
-  // 2. State
-  late String _coachUid;
+  // 1. Make coachUid nullable
+  String? _coachUid;
+  
+  // 2. Add a helper to check if connected
+  bool get hasCoach => _coachUid != null;
 
-  // 3. Initialization
   void initialize(Map<String, dynamic> athleteData) {
+    // Safely retrieve coachUid (it might be null)
     _coachUid = athleteData['coachUid'];
+    notifyListeners();
   }
 
-  // 4. DATA FETCHING (FUTURE)
-  // Replaces the old Stream
   Future<List<Map<String, dynamic>>> fetchCoachDrills() {
-    return _dbRepo.getDrillsForCoach(_coachUid);
+    // 3. Prevent API call if no coach
+    if (_coachUid == null) {
+      return Future.value([]); 
+    }
+    return _dbRepo.getDrillsForCoach(_coachUid!);
   }
+
   
   // 5. Mock Data for "Default" Drills
   final List<Map<String, dynamic>> defaultDrills = const [

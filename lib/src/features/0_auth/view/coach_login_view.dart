@@ -24,7 +24,7 @@ class _CoachLoginViewState extends State<CoachLoginView> {
   @override
   void initState() {
     super.initState();
-    // 2. Initialize the ViewModel (initializes auth/session services)
+    // 2. Initialize the ViewModel
     _viewModel.init();
     // 3. Listen for changes
     _viewModel.addListener(_onViewModelChanged);
@@ -32,7 +32,6 @@ class _CoachLoginViewState extends State<CoachLoginView> {
 
   @override
   void dispose() {
-    // 3. Clean up
     _viewModel.removeListener(_onViewModelChanged);
     _emailController.dispose();
     _passwordController.dispose();
@@ -53,6 +52,9 @@ class _CoachLoginViewState extends State<CoachLoginView> {
       return;
     }
 
+    // Dismiss keyboard
+    FocusScope.of(context).unfocus();
+
     bool success = await _viewModel.loginCoach(
       email: _emailController.text.trim(),
       password: _passwordController.text.trim(),
@@ -60,9 +62,9 @@ class _CoachLoginViewState extends State<CoachLoginView> {
 
     // 6. View handles navigation
     if (success && mounted) {
-      Navigator.of(context).pushReplacementNamed('/coach-home');
+      Navigator.of(context).pushReplacementNamed('/coach-dashboard'); 
+      // Note: Ensure this matches your route name in main.dart (usually /coach-dashboard)
     }
-    // Error snackbar is handled by _onViewModelChanged
   }
 
   void _showErrorSnackBar(String message) {
@@ -74,7 +76,6 @@ class _CoachLoginViewState extends State<CoachLoginView> {
     );
   }
 
-  // 7. Build method is "dumb"
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -91,17 +92,19 @@ class _CoachLoginViewState extends State<CoachLoginView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(Icons.sports,
+                Icon(Icons.sports, // Changed icon to Whistle for Coach
                     size: 60, color: theme.colorScheme.primary),
                 const SizedBox(height: 20),
                 Text(
-                  'Monitor athlete progress and manage training.',
+                  'Manage your team and track drills.',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.titleMedium?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                   ),
                 ),
                 const SizedBox(height: 40),
+                
+                // EMAIL
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -123,6 +126,8 @@ class _CoachLoginViewState extends State<CoachLoginView> {
                   },
                 ),
                 const SizedBox(height: 20),
+                
+                // PASSWORD
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
@@ -142,15 +147,19 @@ class _CoachLoginViewState extends State<CoachLoginView> {
                   },
                 ),
                 const SizedBox(height: 30),
-                // 8. Button reads state from ViewModel
+                
+                // LOGIN BUTTON
                 ElevatedButton(
                   onPressed: _viewModel.isLoading ? null : _handleCoachLogin,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
                   child: _viewModel.isLoading
                       ? const SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
-                            color: Colors.black,
+                            color: Colors.white,
                             strokeWidth: 3,
                           ),
                         )
@@ -159,14 +168,27 @@ class _CoachLoginViewState extends State<CoachLoginView> {
                           style: TextStyle(fontSize: 18),
                         ),
                 ),
+                
                 const SizedBox(height: 20),
-                TextButton(
-                  onPressed: _viewModel.isLoading ? null : () {
-                    // Placeholder for "Join Code" feature
-                  },
-                  child: const Text(
-                    'Have an Athlete Join Code?',
-                  ),
+                const Divider(),
+                const SizedBox(height: 10),
+
+                // --- NEW: LINK TO REGISTRATION ---
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text("Don't have an account?"),
+                    TextButton(
+                      onPressed: _viewModel.isLoading ? null : () {
+                        // Navigate to the Registration View
+                        Navigator.of(context).pushNamed('/coach-registration');
+                      },
+                      child: const Text(
+                        'Create Account',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

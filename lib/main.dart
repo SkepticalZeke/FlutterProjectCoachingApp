@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'platform_options.dart'; // ⭐️ MOVED TO lib/ ⭐️
 import 'src/core/services/auth_repository.dart';
+import 'src/features/0_auth/view/athlete_signup_view.dart'; // <--- ADD THIS LINE
 
 // --- Screen Imports Updated to new MVVM structure ---
 import 'src/features/0_auth/view/splash_view.dart';
@@ -117,8 +118,10 @@ class CoachFitnessApp extends StatelessWidget {
         '/': (context) => const SplashView(),
         '/role-selection': (context) => const RoleSelectionView(),
         '/login': (context) => const AthleteLoginView(),
+        '/athlete-signup': (context) => const AthleteSignupView(),
 
         // Coach Flow (from 0_auth and 1_coach_flow)
+        '/coach-dashboard': (context) => const CoachDashboardView(),
         '/coach-login': (context) => const CoachLoginView(),
         '/coach-home': (context) => const CoachDashboardView(),
         '/coach-registration': (context) => const CoachRegistrationView(),

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 // Import our Models
 import '../../../core/services/auth_repository.dart';
 import '../../../core/services/database_repository.dart';
@@ -11,48 +10,59 @@ class CoachDashboardViewModel extends ChangeNotifier {
 
   String? get coachUid => _authRepo.currentUser?.uid;
 
-  // State for loading indicators during add actions
+  // Loading State
   bool _isProcessing = false;
   bool get isProcessing => _isProcessing;
 
+  // =======================================================
+  // TAB 1: TEAM ROSTER LOGIC
+  // =======================================================
   Future<List<Map<String, dynamic>>> fetchAthletes() async {
     if (coachUid == null) return [];
     return _dbRepo.getAthletes(coachUid!);
   }
 
-  // --- Logic: Add New Athlete ---
-  Future<bool> addNewAthlete(String name, String pin) async {
+  // NEW: Link Athlete by Code (Replaces old "Add Name/PIN")
+  Future<bool> linkAthlete(String connectionCode) async {
     if (coachUid == null) return false;
+    
     _setProcessing(true);
     try {
-      await _dbRepo.addNewAthlete(
-        coachUid: coachUid!,
-        name: name,
-        pin: pin,
-      );
+      await _dbRepo.linkAthlete(connectionCode);
       _setProcessing(false);
-      return true;
+      return true; // Success
     } catch (e) {
-      debugPrint("Error adding athlete: $e");
+      debugPrint("Error linking athlete: $e");
       _setProcessing(false);
-      return false;
+      return false; // Failed
     }
   }
 
-  // --- Logic: Mass Assign (Concept) ---
-  // In a full implementation, you would pass a list of athlete IDs.
-  // For now, this is a placeholder or you can implement a "Assign to All" here.
-  
+  // =======================================================
+  // TAB 2: DRILL LIBRARY LOGIC
+  // =======================================================
+  Future<List<Map<String, dynamic>>> fetchCoachDrills() async {
+    if (coachUid == null) return [];
+    return _dbRepo.getCoachDrills();
+  }
+
+  // =======================================================
+  // TAB 3: NOTIFICATIONS LOGIC
+  // =======================================================
+  Future<List<Map<String, dynamic>>> fetchPendingSubmissions() async {
+    // The repo handles finding pending logs for this coach
+    return _dbRepo.getPendingSubmissions();
+  }
+
+  // =======================================================
+  // AUTH LOGIC
+  // =======================================================
   Future<void> logout() async {
-    try {
-      await _authRepo.signOut();
-    } catch (e) {
-      debugPrint("Error logging out: $e");
-    }
+    await _authRepo.signOut();
   }
 
-  void _setProcessing(bool value) {
-    _isProcessing = value;
+  void _setProcessing(bool isProcessing) {
+    _isProcessing = isProcessing;
     notifyListeners();
   }
 }

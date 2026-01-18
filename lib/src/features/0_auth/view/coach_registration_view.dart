@@ -1,13 +1,6 @@
 import 'package:flutter/material.dart';
-// Import the new ViewModel
 import '../viewmodel/coach_registration_viewmodel.dart';
 
-/*
-  VIEW (V)
-  This is the UI. It is now "dumb".
-  It doesn't know Firebase exists.
-  It only talks to the ViewModel.
-*/
 class CoachRegistrationView extends StatefulWidget {
   const CoachRegistrationView({super.key});
 
@@ -16,81 +9,70 @@ class CoachRegistrationView extends StatefulWidget {
 }
 
 class _CoachRegistrationViewState extends State<CoachRegistrationView> {
-  // 1. The View owns its ViewModel
   final _viewModel = CoachRegistrationViewModel();
-
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  
+  // Controllers (Athlete controllers removed)
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _athleteNameController = TextEditingController();
-  final TextEditingController _athletePinController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    // 2. Listen for changes in the ViewModel
     _viewModel.addListener(_onViewModelChanged);
   }
 
   @override
   void dispose() {
-    // 3. Clean up the listener and controllers
     _viewModel.removeListener(_onViewModelChanged);
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _athleteNameController.dispose();
-    _athletePinController.dispose();
     super.dispose();
   }
 
-  // 4. This function is called by the ViewModel to rebuild the UI
   void _onViewModelChanged() {
-    // Show error snackbar if there's a new error
     if (_viewModel.errorMessage != null) {
       _showErrorSnackBar(_viewModel.errorMessage!);
     }
-    // Rebuild the widget to update the loading spinner
     setState(() {});
   }
 
-  // 5. The View's "handle" function just calls the ViewModel
+  // Handle Registration
   void _handleRegistration() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    // Call the ViewModel to do the work
+    // Dismiss keyboard
+    FocusScope.of(context).unfocus();
+
+    // Call ViewModel (No athlete args passed)
     bool success = await _viewModel.registerCoach(
+      name: _nameController.text.trim(),
       email: _emailController.text.trim(),
       password: _passwordController.text.trim(),
-      athleteName: _athleteNameController.text.trim(),
-      athletePin: _athletePinController.text.trim(),
     );
 
-    // 6. The View handles the navigation result
     if (success && mounted) {
+      // Navigate to Dashboard
       Navigator.of(context).pushNamedAndRemoveUntil(
-        '/coach-home',
+        '/coach-dashboard', // Ensure this matches your main.dart route
         (Route<dynamic> route) => false,
       );
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Account created! Welcome to CoachFitness.')),
+        const SnackBar(content: Text('Account created! Welcome.')),
       );
     }
-    // Error handling is now done by the _onViewModelChanged listener
   }
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
-  // 7. The build method now reads state from the ViewModel
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -105,26 +87,43 @@ class _CoachRegistrationViewState extends State<CoachRegistrationView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(Icons.group_add,
+                Icon(Icons.sports, // Changed to whistle icon
                     size: 60, color: theme.colorScheme.primary),
                 const SizedBox(height: 10),
                 Text(
-                  'Create Your Coach Account',
+                  'Create Coach Account',
                   style: theme.textTheme.headlineSmall
                       ?.copyWith(fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
+                const SizedBox(height: 10),
+                Text(
+                  'Manage your team and track athlete stats.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
                 const SizedBox(height: 40),
 
-                // --- Coach Account Details ---
-                Text(
-                  '1. Coach Account',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.primary),
+                // --- Name ---
+                TextFormField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    labelText: 'Full Name',
+                    prefixIcon:
+                        Icon(Icons.person, color: theme.colorScheme.primary),
+                    border: const OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(12))),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your name.';
+                    }
+                    return null;
+                  },
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 20),
+
+                // --- Email ---
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -145,6 +144,8 @@ class _CoachRegistrationViewState extends State<CoachRegistrationView> {
                   },
                 ),
                 const SizedBox(height: 20),
+
+                // --- Password ---
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
@@ -162,67 +163,20 @@ class _CoachRegistrationViewState extends State<CoachRegistrationView> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 40),
-
-                // --- First Athlete Details ---
-                Text(
-                  '2. First Athlete Setup',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.primary),
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  controller: _athleteNameController,
-                  decoration: InputDecoration(
-                    labelText: 'Athlete Name / Nickname',
-                    prefixIcon:
-                        Icon(Icons.person, color: theme.colorScheme.primary),
-                    border: const OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(12))),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a nickname for the athlete.';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 20),
-                TextFormField(
-                  controller: _athletePinController,
-                  keyboardType: TextInputType.number,
-                  maxLength: 4,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: '4-Digit PIN (for athlete login)',
-                    counterText: '',
-                    prefixIcon: Icon(Icons.lock_outline,
-                        color: theme.colorScheme.primary),
-                    border: const OutlineInputBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(12))),
-                  ),
-                  validator: (value) {
-                    if (value == null ||
-                        value.length != 4 ||
-                        int.tryParse(value) == null) {
-                      return 'PIN must be 4 digits.';
-                    }
-                    return null;
-                  },
-                ),
                 const SizedBox(height: 30),
 
-                // 8. Button now reads state from the ViewModel
+                // --- Button ---
                 ElevatedButton(
                   onPressed: _viewModel.isLoading ? null : _handleRegistration,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
                   child: _viewModel.isLoading
                       ? const SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
-                              color: Colors.black, strokeWidth: 3),
+                              color: Colors.white, strokeWidth: 3),
                         )
                       : const Text(
                           'Create Account',

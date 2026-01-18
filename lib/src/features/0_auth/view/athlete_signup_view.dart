@@ -1,12 +1,7 @@
 import 'package:flutter/material.dart';
-// Import the new ViewModel and Model
+import 'package:flutter/services.dart';
 import '../viewmodel/athlete_signup_viewmodel.dart';
-import '../../../core/models/athlete.dart';
 
-/*
-  VIEW (V)
-  This is the UI. It is "dumb" and only talks to the ViewModel.
-*/
 class AthleteSignupView extends StatefulWidget {
   const AthleteSignupView({super.key});
 
@@ -15,196 +10,170 @@ class AthleteSignupView extends StatefulWidget {
 }
 
 class _AthleteSignupViewState extends State<AthleteSignupView> {
-  // 1. The View owns its ViewModel
+  // 1. Initialize ViewModel
   final _viewModel = AthleteSignupViewModel();
 
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _pinController = TextEditingController();
-  final TextEditingController _codeController = TextEditingController();
+  // 2. Controllers
+  final _displayNameController = TextEditingController(); // <--- NEW
+  final _usernameController = TextEditingController();
+  final _pinController = TextEditingController();
+  
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
     super.initState();
-    // 2. Listen for changes
-    _viewModel.addListener(_onViewModelChanged);
+    _viewModel.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
   void dispose() {
-    // 3. Clean up
-    _viewModel.removeListener(_onViewModelChanged);
-    _nameController.dispose();
-    _pinController.dispose();
-    _codeController.dispose();
     _viewModel.dispose();
+    _displayNameController.dispose(); // <--- Dispose
+    _usernameController.dispose();
+    _pinController.dispose();
     super.dispose();
   }
 
-  // 4. Rebuild UI and show errors
-  void _onViewModelChanged() {
-    if (_viewModel.errorMessage != null) {
-      _showErrorSnackBar(_viewModel.errorMessage!);
-    }
-    setState(() {}); // Rebuild to update loading spinner
-  }
-
-  // 5. "handle" function now calls the ViewModel
-  void _handleNewPlayerRegistration() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    final Athlete? newAthlete = await _viewModel.registerAthlete(
-      name: _nameController.text.trim(),
-      pin: _pinController.text.trim(),
-      coachEmail: _codeController.text.trim(),
-    );
-
-    // 6. View handles navigation
-    if (newAthlete != null && mounted) {
-      // Convert Athlete object to Map for navigation
-      final athleteData = {
-        'id': newAthlete.id,
-        'name': newAthlete.name,
-        'pin': newAthlete.pin,
-        'coachUid': newAthlete.coachUid,
-        'level': newAthlete.level,
-        'streak': newAthlete.streak,
-        'progress': newAthlete.progress,
-        'status': newAthlete.status,
-        'skill_focus': newAthlete.skillFocus,
-        'difficulty': newAthlete.difficulty,
-        'stars': newAthlete.stars,
-        'selectedOutfit': newAthlete.selectedOutfit,
-        'selectedShoe': newAthlete.selectedShoe,
-        'selectedEquipment': newAthlete.selectedEquipment,
-        'currentXp': newAthlete.currentXp,
-        'requiredXp': newAthlete.requiredXp,
-        'totalXp': newAthlete.totalXp,
-      };
-
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        '/athlete-home',
-        (Route<dynamic> route) => false,
-        arguments: athleteData,
-      );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Registration complete! Welcome to CoachFitness.')),
-      );
-    }
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-
-  // 7. Build method is "dumb"
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    if (_viewModel.registeredAthleteData != null) {
+      return _buildSuccessView();
+    }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('New Athlete Setup')),
+      appBar: AppBar(title: const Text("New Athlete Profile")),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32.0),
+          padding: const EdgeInsets.all(24.0),
           child: Form(
             key: _formKey,
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(Icons.add_task,
-                    size: 60, color: theme.colorScheme.primary),
-                const SizedBox(height: 10),
-                Text(
-                  'Let\'s build your profile!',
-                  style: theme.textTheme.headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Enter your details and the email from your coach.',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-                ),
-                const SizedBox(height: 40),
-                TextFormField(
-                  controller: _nameController,
-                  decoration: _buildInputDecoration(
-                      labelText: 'Your Name / Nickname', icon: Icons.person),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please choose a nickname.';
-                    }
-                    return null;
-                  },
-                ),
+                const Icon(Icons.person_add, size: 60, color: Colors.blue),
                 const SizedBox(height: 20),
-                TextFormField(
-                  controller: _pinController,
-                  keyboardType: TextInputType.number,
-                  obscureText: true,
-                  maxLength: 4,
-                  decoration: _buildInputDecoration(
-                      labelText: '4-Digit PIN (for login)',
-                      icon: Icons.lock_outline),
-                  validator: (value) {
-                    if (value == null ||
-                        value.length != 4 ||
-                        int.tryParse(value) == null) {
-                      return 'Please enter a valid 4-digit PIN.';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 20),
-                // ⭐️ Relabeled "Team Code" to "Coach's Email" ⭐️
-                TextFormField(
-                  controller: _codeController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: _buildInputDecoration(
-                      labelText: 'Coach\'s Email', icon: Icons.group),
-                  validator: (value) {
-                    if (value == null || !value.contains('@')) {
-                      return 'Please enter your coach\'s email.';
-                    }
-                    return null;
-                  },
+                Text(
+                  "Create Your Account",
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 30),
-                ElevatedButton(
-                  onPressed:
-                      _viewModel.isLoading ? null : _handleNewPlayerRegistration,
-                  child: _viewModel.isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                              color: Colors.black, strokeWidth: 3),
-                        )
-                      : const Text(
-                          'Join Team and Start',
-                          style: TextStyle(fontSize: 18),
-                        ),
+
+                // --- NEW: DISPLAY NAME FIELD ---
+                TextFormField(
+                  controller: _displayNameController,
+                  decoration: const InputDecoration(
+                    labelText: "Display Name (Real Name)",
+                    hintText: "e.g. John Doe",
+                    prefixIcon: Icon(Icons.badge),
+                    border: OutlineInputBorder(),
+                    filled: true,
+                  ),
+                  textCapitalization: TextCapitalization.words,
+                  enabled: !_viewModel.isLoading,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return "Please enter your name";
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 20),
+
+                // --- USERNAME FIELD ---
+                TextFormField(
+                  controller: _usernameController,
+                  decoration: const InputDecoration(
+                    labelText: "Username (Login ID)",
+                    hintText: "e.g. SpeedDemon99",
+                    prefixIcon: Icon(Icons.person),
+                    border: OutlineInputBorder(),
+                    filled: true,
+                  ),
+                  enabled: !_viewModel.isLoading,
+                  validator: (v) {
+                    if (v == null || v.trim().length < 3) {
+                      return "Username must be at least 3 characters";
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+
+                // --- PIN FIELD ---
+                TextFormField(
+                  controller: _pinController,
+                  decoration: const InputDecoration(
+                    labelText: "Create a 4-Digit PIN",
+                    prefixIcon: Icon(Icons.lock),
+                    border: OutlineInputBorder(),
+                    filled: true,
+                    counterText: "",
+                  ),
+                  keyboardType: TextInputType.number,
+                  maxLength: 4,
+                  obscureText: true,
+                  enabled: !_viewModel.isLoading,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  validator: (v) {
+                    if (v == null || v.length != 4) {
+                      return "PIN must be exactly 4 digits";
+                    }
+                    return null;
+                  },
+                ),
+
+                // --- ERROR FEEDBACK ---
+                if (_viewModel.errorMessage != null) ...[
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.red.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.error_outline, color: Colors.red.shade700),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            _viewModel.errorMessage!,
+                            style: TextStyle(color: Colors.red.shade900),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 30),
+
+                // --- SUBMIT BUTTON ---
+                SizedBox(
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _viewModel.isLoading ? null : _submit,
+                    child: _viewModel.isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text("Create Account", style: TextStyle(fontSize: 18)),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
                 TextButton(
                   onPressed: _viewModel.isLoading
                       ? null
                       : () {
-                          Navigator.of(context).pop();
+                          Navigator.pop(context);
                         },
-                  child: const Text('Already have an account? Log In'),
+                  child: const Text("Already have an account? Log In"),
                 ),
               ],
             ),
@@ -214,15 +183,94 @@ class _AthleteSignupViewState extends State<AthleteSignupView> {
     );
   }
 
-  // Helper Widget (UI Only)
-  InputDecoration _buildInputDecoration(
-      {required String labelText, required IconData icon}) {
-    return InputDecoration(
-      labelText: labelText,
-      prefixIcon: Icon(icon, color: Theme.of(context).colorScheme.primary),
-      border: const OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12))),
-      counterText: '', // Hide counter for PIN field
+  void _submit() {
+    if (_formKey.currentState!.validate()) {
+      FocusScope.of(context).unfocus();
+      
+      _viewModel.registerSelf(
+        displayName: _displayNameController.text.trim(), // <--- Pass Name
+        username: _usernameController.text.trim(),
+        pin: _pinController.text.trim(),
+      );
+    }
+  }
+
+  // --- SUCCESS VIEW ---
+  Widget _buildSuccessView() {
+    final code = _viewModel.registeredAthleteData?['connectionCode'] ?? 'ERROR';
+    // Use the actual Display Name here for a nicer welcome
+    final name = _viewModel.registeredAthleteData?['name'] ?? 'Athlete';
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(30.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.check_circle, color: Colors.green, size: 80),
+              const SizedBox(height: 20),
+              Text(
+                "Welcome, $name!",
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                "Your account is ready.",
+                style: TextStyle(fontSize: 16, color: Colors.white70),
+              ),
+              const SizedBox(height: 30),
+              
+              const Text(
+                "Give this code to your Coach:",
+                style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+
+              // DISPLAY THE CODE
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 25),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Text(
+                  code,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 42,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 8,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 40),
+              
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      '/login', 
+                      (route) => false
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                  ),
+                  child: const Text("Go to Login", style: TextStyle(fontSize: 18, color: Colors.black)),
+                ),
+              )
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

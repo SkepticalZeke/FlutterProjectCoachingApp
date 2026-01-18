@@ -2,7 +2,9 @@ class Athlete {
   final String id;
   final String name;
   final String pin;
-  final String coachUid;
+  final String username;       // NEW
+  final String connectionCode; // NEW
+  final String? coachUid;
   final int level;
   final int streak;
   final double progress;
@@ -18,10 +20,12 @@ class Athlete {
   final int totalXp;
 
   Athlete({
-    required this.id,
+  required this.id,
+    required this.username,
+    required this.connectionCode,
     required this.name,
     required this.pin,
-    required this.coachUid,
+    this.coachUid,
     required this.level,
     required this.streak,
     required this.progress,
@@ -40,9 +44,11 @@ class Athlete {
   factory Athlete.fromMap(Map<String, dynamic> data, String id) {
     return Athlete(
       id: id,
-      name: data['name'] ?? '',
+      username: data['username'] ?? '',
+      connectionCode: data['connectionCode'] ?? 'Wait...',
+      name: data['displayName'] ?? data['name'] ?? 'Unknown',
       pin: data['pin'] ?? '',
-      coachUid: data['coachUid'] ?? '',
+      coachUid: data['coachUid'], // Allows null
       level: data['level'] ?? 1,
       streak: data['streak'] ?? 0,
       progress: data['progress']?.toDouble() ?? 0.0,

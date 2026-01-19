@@ -35,6 +35,7 @@ class _CoachLoginViewState extends State<CoachLoginView> {
     _viewModel.removeListener(_onViewModelChanged);
     _emailController.dispose();
     _passwordController.dispose();
+    _viewModel.dispose(); // Ensure ViewModel is disposed
     super.dispose();
   }
 
@@ -43,7 +44,7 @@ class _CoachLoginViewState extends State<CoachLoginView> {
     if (_viewModel.errorMessage != null) {
       _showErrorSnackBar(_viewModel.errorMessage!);
     }
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   // 5. "handle" function now calls the ViewModel
@@ -62,7 +63,7 @@ class _CoachLoginViewState extends State<CoachLoginView> {
 
     // 6. View handles navigation
     if (success && mounted) {
-      Navigator.of(context).pushReplacementNamed('/coach-dashboard'); 
+      Navigator.of(context).pushReplacementNamed('/coach-dashboard');
       // Note: Ensure this matches your route name in main.dart (usually /coach-dashboard)
     }
   }
@@ -71,7 +72,9 @@ class _CoachLoginViewState extends State<CoachLoginView> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -79,121 +82,230 @@ class _CoachLoginViewState extends State<CoachLoginView> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final primaryColor = theme.primaryColor;
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Coach Access'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32.0),
-          child: Form(
-            key: _formKey,
+      body: Container(
+        // DARK BACKGROUND
+        width: double.infinity,
+        height: double.infinity,
+        color: const Color(0xFF121212),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.sports, // Changed icon to Whistle for Coach
-                    size: 60, color: theme.colorScheme.primary),
-                const SizedBox(height: 20),
-                Text(
-                  'Manage your team and track drills.',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                const SizedBox(height: 60),
+                // ICON CONTAINER
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E1E1E),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 40),
-                
-                // EMAIL
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    labelText: 'Email Address',
-                    border: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                    ),
-                    prefixIcon:
-                        Icon(Icons.email, color: theme.colorScheme.primary),
-                  ),
-                  validator: (value) {
-                    if (value == null ||
-                        value.isEmpty ||
-                        !value.contains('@')) {
-                      return 'Please enter a valid email address';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 20),
-                
-                // PASSWORD
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    border: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                    ),
-                    prefixIcon:
-                        Icon(Icons.lock, color: theme.colorScheme.primary),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.length < 6) {
-                      return 'Password must be at least 6 characters';
-                    }
-                    return null;
-                  },
+                  // Icon changed to Whistle for Coach
+                  child: Icon(Icons.sports, size: 50, color: primaryColor),
                 ),
                 const SizedBox(height: 30),
-                
-                // LOGIN BUTTON
-                ElevatedButton(
-                  onPressed: _viewModel.isLoading ? null : _handleCoachLogin,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: _viewModel.isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 3,
-                          ),
-                        )
-                      : const Text(
-                          'Login',
-                          style: TextStyle(fontSize: 18),
-                        ),
-                ),
-                
-                const SizedBox(height: 20),
-                const Divider(),
-                const SizedBox(height: 10),
 
-                // --- NEW: LINK TO REGISTRATION ---
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text("Don't have an account?"),
-                    TextButton(
-                      onPressed: _viewModel.isLoading ? null : () {
-                        // Navigate to the Registration View
-                        Navigator.of(context).pushNamed('/coach-registration');
-                      },
-                      child: const Text(
-                        'Create Account',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                // FORM CARD
+                Container(
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E1E1E),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 30,
+                        offset: const Offset(0, 10),
                       ),
+                    ],
+                  ),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'Coach Login',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Manage your team and track drills.',
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey.shade400,
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+
+                        // EMAIL FIELD
+                        TextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration:
+                              _inputDecoration('Email Address', Icons.email),
+                          validator: (value) {
+                            if (value == null ||
+                                value.isEmpty ||
+                                !value.contains('@')) {
+                              return 'Please enter a valid email address';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 20),
+
+                        // PASSWORD FIELD
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: true,
+                          decoration:
+                              _inputDecoration('Password', Icons.lock),
+                          validator: (value) {
+                            if (value == null || value.length < 6) {
+                              return 'Password must be at least 6 characters';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 30),
+
+                        // LOGIN BUTTON
+                        Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00BCD4),
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF00BCD4).withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton(
+                            onPressed: _viewModel.isLoading
+                                ? null
+                                : _handleCoachLogin,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: _viewModel.isLoading
+                                ? const SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Login',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // --- LINK TO REGISTRATION ---
+                TextButton(
+                  onPressed: _viewModel.isLoading
+                      ? null
+                      : () {
+                          // Navigate to the Registration View
+                          Navigator.of(context)
+                              .pushNamed('/coach-registration');
+                        },
+                  child: RichText(
+                    text: TextSpan(
+                      text: "Don't have an account? ",
+                      style: TextStyle(color: Colors.grey.shade400),
+                      children: [
+                        TextSpan(
+                          text: "Create Account",
+                          style: TextStyle(
+                            color: primaryColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // Helper for cleaner Input Decoration
+  InputDecoration _inputDecoration(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: TextStyle(color: Colors.grey.shade400),
+      prefixIcon: Icon(icon, color: const Color(0xFF00BCD4)),
+      filled: true,
+      fillColor: const Color(0xFF2A2A2A),
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade700),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF00BCD4), width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.red.shade400),
       ),
     );
   }

@@ -9,7 +9,8 @@ import '../viewmodel/avatar_viewmodel.dart';
 */
 class AvatarView extends StatefulWidget {
   final Map<String, dynamic> athleteData;
-  const AvatarView({super.key, required this.athleteData});
+  final bool embedded; // When true, no Scaffold wrapper (used in shell)
+  const AvatarView({super.key, required this.athleteData, this.embedded = false});
 
   @override
   State<AvatarView> createState() => _AvatarViewState();
@@ -20,7 +21,7 @@ class _AvatarViewState extends State<AvatarView>
   // 1. The View owns its ViewModel
   final _viewModel = AvatarViewModel();
   late TabController _tabController;
-  
+
   // 2. State for our API Data
   late Future<Map<String, dynamic>?> _profileFuture;
 
@@ -30,10 +31,10 @@ class _AvatarViewState extends State<AvatarView>
     // Initialize ViewModel
     _viewModel.initialize(widget.athleteData);
     _tabController = TabController(length: 3, vsync: this);
-    
+
     // Listen for changes (error messages)
     _viewModel.addListener(_onViewModelChanged);
-    
+
     // Load Initial Data
     _loadProfile();
   }
@@ -72,13 +73,16 @@ class _AvatarViewState extends State<AvatarView>
       item,
       liveAthleteData,
     );
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result),
           backgroundColor:
               _viewModel.errorMessage == null ? Colors.green : Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
       // 4. IMPORTANT: Refresh the profile to show new Stars balance / Equipped item
@@ -90,7 +94,9 @@ class _AvatarViewState extends State<AvatarView>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: Colors.redAccent,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -111,120 +117,226 @@ class _AvatarViewState extends State<AvatarView>
         final int currentXp = (liveAthleteData['currentXp'] ?? 0).toInt();
         final int selectedOutfitId = liveAthleteData['selectedOutfit'] ?? 101;
         final int selectedShoeId = liveAthleteData['selectedShoe'] ?? 201;
-        final int selectedEquipmentId = liveAthleteData['selectedEquipment'] ?? 301;
+        final int selectedEquipmentId =
+            liveAthleteData['selectedEquipment'] ?? 301;
         final List<dynamic> unlockedItems =
             liveAthleteData['unlockedItems'] ?? [];
 
         return Scaffold(
+          extendBodyBehindAppBar: true,
           appBar: AppBar(
-            title: const Text('My Athlete & Gear'),
+            title: const Text(
+              'My Athlete & Gear',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            centerTitle: true,
+            automaticallyImplyLeading: !widget.embedded,
+            iconTheme: const IconThemeData(color: Colors.white),
             actions: [
               // Manual Refresh Button
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                onPressed: _loadProfile,
+              Container(
+                margin: const EdgeInsets.only(right: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E1E1E),
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.refresh, color: Colors.purple),
+                  onPressed: _loadProfile,
+                ),
               )
             ],
           ),
-          body: Column(
-            children: [
-              // --- Currency and Avatar Display ---
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildCurrencyChip(Icons.stars, currentStars, Colors.amber),
-                    _buildCurrencyChip(
-                        Icons.bolt, currentXp, theme.colorScheme.primary),
-                  ],
-                ),
-              ),
+          // DARK BACKGROUND
+          body: Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: const Color(0xFF121212),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  // --- Currency and Avatar Display ---
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24.0, vertical: 10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildCurrencyChip(
+                            Icons.stars_rounded, currentStars, Colors.amber),
+                        const SizedBox(width: 16),
+                        _buildCurrencyChip(
+                            Icons.bolt_rounded, currentXp, Colors.blue),
+                      ],
+                    ),
+                  ),
 
-              // --- Avatar Display Area ---
-              Container(
-                height: 180,
-                alignment: Alignment.center,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: 150,
-                      height: 150,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surface,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                            color: theme.colorScheme.primary, width: 2),
+                  // --- Avatar Display Area ---
+                  SizedBox(
+                    height: 200,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Glow/Backdrop
+                        Container(
+                          width: 160,
+                          height: 160,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFF1E1E1E),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.purple.withOpacity(0.3),
+                                blurRadius: 30,
+                                spreadRadius: 5,
+                              )
+                            ],
+                          ),
+                        ),
+                        // Character
+                        Icon(
+                          Icons.person,
+                          size: 140,
+                          color: _viewModel.outfits.firstWhere(
+                                  (k) => k['id'] == selectedOutfitId,
+                                  orElse: () => _viewModel.outfits.first)[
+                              'color'] as Color,
+                        ),
+                        // Equipment (Overlay)
+                        Positioned(
+                          bottom: 40,
+                          right: 80,
+                          child: Transform.rotate(
+                            angle: -0.2,
+                            child: Icon(
+                              _viewModel.equipment.firstWhere(
+                                      (e) => e['id'] == selectedEquipmentId,
+                                      orElse: () => _viewModel.equipment
+                                          .first)['icon'] as IconData,
+                              size: 40,
+                              color: _viewModel.equipment.firstWhere(
+                                      (b) => b['id'] == selectedEquipmentId,
+                                      orElse: () => _viewModel.equipment
+                                          .first)['color'] as Color,
+                            ),
+                          ),
+                        ),
+                        // Shoe Indicator (Abstract representation)
+                        Positioned(
+                          bottom: 30,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                                color: const Color(0xFF2A2A2A),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                      color: Colors.black.withOpacity(0.3), blurRadius: 4)
+                                ]),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.do_not_step,
+                                    size: 14, color: Colors.grey.shade500),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _viewModel.shoes.firstWhere(
+                                      (s) => s['id'] == selectedShoeId,
+                                      orElse: () =>
+                                          _viewModel.shoes.first)['name'],
+                                  style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white),
+                                )
+                              ],
+                            ),
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // --- Customization Tabs ---
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 24),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E1E1E),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      labelColor: Colors.purple,
+                      unselectedLabelColor: Colors.grey,
+                      indicatorSize: TabBarIndicatorSize.label,
+                      indicatorColor: Colors.purple,
+                      dividerColor: Colors.transparent,
+                      tabs: const [
+                        Tab(icon: Icon(Icons.checkroom), text: 'Outfits'),
+                        Tab(icon: Icon(Icons.style), text: 'Shoes'),
+                        Tab(icon: Icon(Icons.fitness_center), text: 'Gear'),
+                      ],
+                    ),
+                  ),
+
+                  // --- Customization Content ---
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 20),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          // 6. Wrap Grids in RefreshIndicator to allow Pull-to-Refresh
+                          RefreshIndicator(
+                            onRefresh: _loadProfile,
+                            child: _buildItemGrid(
+                                _viewModel.outfits,
+                                'Outfit',
+                                selectedOutfitId,
+                                liveAthleteData,
+                                unlockedItems),
+                          ),
+                          RefreshIndicator(
+                            onRefresh: _loadProfile,
+                            child: _buildItemGrid(
+                                _viewModel.shoes,
+                                'Shoe',
+                                selectedShoeId,
+                                liveAthleteData,
+                                unlockedItems),
+                          ),
+                          RefreshIndicator(
+                            onRefresh: _loadProfile,
+                            child: _buildItemGrid(
+                                _viewModel.equipment,
+                                'Equipment',
+                                selectedEquipmentId,
+                                liveAthleteData,
+                                unlockedItems),
+                          ),
+                        ],
                       ),
                     ),
-                    Icon(
-                      Icons.person,
-                      size: 100,
-                      color: _viewModel.outfits
-                          .firstWhere((k) => k['id'] == selectedOutfitId,
-                              orElse: () => _viewModel.outfits.first)['color']
-                          as Color,
-                    ),
-                    Positioned(
-                      bottom: 40,
-                      right: 40,
-                      child: Icon(
-                        _viewModel.equipment
-                                .firstWhere((e) => e['id'] == selectedEquipmentId,
-                                    orElse: () => _viewModel.equipment.first)['icon']
-                            as IconData,
-                        size: 30,
-                        color: _viewModel.equipment
-                                .firstWhere((b) => b['id'] == selectedEquipmentId,
-                                    orElse: () => _viewModel.equipment.first)['color']
-                            as Color,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-
-              // --- Customization Tabs ---
-              TabBar(
-                controller: _tabController,
-                labelColor: theme.colorScheme.primary,
-                unselectedLabelColor:
-                    theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                indicatorColor: theme.colorScheme.primary,
-                tabs: const [
-                  Tab(icon: Icon(Icons.checkroom), text: 'Outfits'),
-                  Tab(icon: Icon(Icons.style), text: 'Shoes'),
-                  Tab(icon: Icon(Icons.construction), text: 'Equipment'),
+                  ),
                 ],
               ),
-
-              // --- Customization Content ---
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    // 6. Wrap Grids in RefreshIndicator to allow Pull-to-Refresh
-                    RefreshIndicator(
-                      onRefresh: _loadProfile,
-                      child: _buildItemGrid(_viewModel.outfits, 'Outfit',
-                          selectedOutfitId, liveAthleteData, unlockedItems),
-                    ),
-                    RefreshIndicator(
-                      onRefresh: _loadProfile,
-                      child: _buildItemGrid(_viewModel.shoes, 'Shoe', selectedShoeId,
-                          liveAthleteData, unlockedItems),
-                    ),
-                    RefreshIndicator(
-                      onRefresh: _loadProfile,
-                      child: _buildItemGrid(_viewModel.equipment, 'Equipment',
-                          selectedEquipmentId, liveAthleteData, unlockedItems),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
         );
       },
@@ -234,20 +346,31 @@ class _AvatarViewState extends State<AvatarView>
   // --- Helper Widgets (UI Only) ---
   Widget _buildCurrencyChip(IconData icon, int value, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.2),
+        color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, size: 20, color: color),
-          const SizedBox(width: 5),
+          const SizedBox(width: 8),
           Text(
             value.toString(),
-            style: TextStyle(fontWeight: FontWeight.bold, color: color),
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+              fontSize: 16,
+            ),
           ),
         ],
       ),
@@ -264,81 +387,131 @@ class _AvatarViewState extends State<AvatarView>
     final theme = Theme.of(context);
 
     return GridView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(bottom: 20),
       // AlwaysScrollableScrollPhysics ensures Pull-to-Refresh works even if list is short
       physics: const AlwaysScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
+        crossAxisCount: 2,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
-        childAspectRatio: 0.75,
+        childAspectRatio: 1.1,
       ),
       itemCount: items.length,
       itemBuilder: (context, index) {
         final item = items[index];
         final isSelected = item['id'] == selectedId;
         final isDefaultUnlocked = item['unlocked'] == true;
-        final isUnlocked = isDefaultUnlocked || unlockedItems.contains(item['id']);
+        final isUnlocked =
+            isDefaultUnlocked || unlockedItems.contains(item['id']);
 
         return GestureDetector(
           onTap: () =>
               _handleItemSelect(item, category, liveAthleteData),
           child: Container(
             decoration: BoxDecoration(
-              color: isUnlocked
-                  ? theme.colorScheme.surface
-                  : theme.colorScheme.surface.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(16),
+              color: const Color(0xFF1E1E1E),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: isSelected
+                      ? Colors.purple.withOpacity(0.3)
+                      : Colors.black.withOpacity(0.2),
+                  blurRadius: isSelected ? 12 : 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
               border: Border.all(
-                color: isSelected
-                    ? theme.colorScheme.primary
-                    : (isUnlocked
-                        ? theme.colorScheme.onSurface.withValues(alpha: 0.2)
-                        : theme.colorScheme.onSurface.withValues(alpha: 0.4)),
-                width: isSelected ? 4 : 1,
+                color: isSelected ? Colors.purple : Colors.grey.shade700,
+                width: isSelected ? 2 : 1,
               ),
             ),
             child: Opacity(
               opacity: _viewModel.isLoading ? 0.5 : 1.0,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Stack(
                 children: [
-                  Icon(item['icon'] as IconData,
-                      size: 50, color: item['color'] as Color),
-                  const SizedBox(height: 10),
-                  Text(
-                    item['name'] as String,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: isUnlocked
-                          ? theme.colorScheme.onSurface
-                          : theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  if (!isUnlocked)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.stars, size: 16, color: Colors.amber[700]),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${item['cost']}',
-                          style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.amber[700]),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Center(
+                          child: Icon(item['icon'] as IconData,
+                              size: 48,
+                              color: isUnlocked
+                                  ? (item['color'] as Color)
+                                  : Colors.grey.shade300),
                         ),
-                      ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12.0),
+                        child: Column(
+                          children: [
+                            Text(
+                              item['name'] as String,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: isUnlocked
+                                    ? Colors.white
+                                    : Colors.grey.shade600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            if (!isUnlocked)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.stars_rounded,
+                                        size: 14, color: Colors.amber[600]),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '${item['cost']}',
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.amber[500]),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            if (isSelected && isUnlocked)
+                              Text('EQUIPPED',
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.green[400],
+                                      letterSpacing: 1.0)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (!isUnlocked)
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: Icon(Icons.lock,
+                          size: 18, color: Colors.grey.shade400),
                     ),
-                  if (isSelected && isUnlocked)
-                    Text('EQUIPPED',
-                        style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.green[400])),
+                  if (isSelected)
+                    Positioned(
+                        top: 10,
+                        right: 10,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                              color: Colors.purple,
+                              shape: BoxShape.circle),
+                          child: const Icon(Icons.check,
+                              size: 12, color: Colors.white),
+                        ))
                 ],
               ),
             ),

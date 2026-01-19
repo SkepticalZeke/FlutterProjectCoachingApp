@@ -33,16 +33,20 @@ class SkillProgressBar extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                // 4. Text Refactor: Generalized "Rookie Star"
-                'Level $level: Rising Star',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  // 5. UI Theme: This will now correctly use the (cyan) primary color
-                  color: theme.colorScheme.primary,
+              Flexible(
+                child: Text(
+                  // 4. Text Refactor: Generalized "Rookie Star"
+                  'Level $level: Rising Star',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    // 5. UI Theme: This will now correctly use the (cyan) primary color
+                    color: theme.colorScheme.primary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 8),
               Text(
                 'XP: ${currentXp.toInt()}/${requiredXp.toInt()}',
                 style: TextStyle(

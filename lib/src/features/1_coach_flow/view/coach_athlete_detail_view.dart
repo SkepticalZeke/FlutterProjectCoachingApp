@@ -67,8 +67,11 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(success ? 'Routine settings saved!' : 'Failed to save settings.'),
+          content: Text(
+              success ? 'Routine settings saved!' : 'Failed to save settings.'),
           backgroundColor: success ? Colors.green : Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
     }
@@ -83,6 +86,8 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
               ? '${widget.athleteData['name']} has been granted a rest day!'
               : 'Failed to add rest day.'),
           backgroundColor: success ? Colors.blue : Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
       // Refresh logs to show the rest day entry if applicable
@@ -93,7 +98,8 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
   // Helper to parse dates from API (String or Timestamp Map)
   DateTime _parseDate(dynamic dateData) {
     if (dateData == null) return DateTime.now();
-    if (dateData is String) return DateTime.tryParse(dateData) ?? DateTime.now();
+    if (dateData is String)
+      return DateTime.tryParse(dateData) ?? DateTime.now();
     // Handle Firestore Timestamp sent as Map {_seconds: ..., _nanoseconds: ...}
     if (dateData is Map && dateData.containsKey('_seconds')) {
       return DateTime.fromMillisecondsSinceEpoch(dateData['_seconds'] * 1000);
@@ -109,40 +115,75 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
     final theme = Theme.of(context);
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text('$athleteName\'s Details'),
+        title: Text(
+          '$athleteName\'s Details',
+          style: const TextStyle(
+              color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      // Wrap body in RefreshIndicator
-      body: RefreshIndicator(
-        onRefresh: () async => _loadLogs(),
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildStatsCard(context),
-              const SizedBox(height: 30),
-              _buildManagementCard(context),
-              const SizedBox(height: 30),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      // Dark Background
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        color: const Color(0xFF121212),
+        child: SafeArea(
+          child: RefreshIndicator(
+            onRefresh: () async => _loadLogs(),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Recent Activity Logs',
-                    style: theme.textTheme.titleLarge
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                  _buildStatsCard(context),
+                  const SizedBox(height: 24),
+                  _buildManagementCard(context),
+                  const SizedBox(height: 32),
+                  
+                  // Logs Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Recent Activity',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      // Small refresh button
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E1E1E),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            )
+                          ],
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.refresh,
+                              size: 18, color: Color(0xFF00BCD4)),
+                          onPressed: _loadLogs,
+                          tooltip: "Refresh Logs",
+                        ),
+                      ),
+                    ],
                   ),
-                  // Small refresh button specifically for logs
-                  IconButton(
-                    icon: const Icon(Icons.refresh, size: 20),
-                    onPressed: _loadLogs,
-                  ),
+                  const SizedBox(height: 16),
+                  _buildActivityLogs(context),
                 ],
               ),
-              const SizedBox(height: 10),
-              _buildActivityLogs(context),
-            ],
+            ),
           ),
         ),
       ),
@@ -152,188 +193,299 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
   // --- Helper Widgets ---
 
   Widget _buildStatsCard(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Text(
-                '${widget.athleteData['name']} - Level ${widget.athleteData['level']}',
-                style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary),
-              ),
-            ),
-            const Divider(height: 25),
-            _buildStatRow(Icons.local_fire_department, 'Current Streak',
-                '${widget.athleteData['streak']} days', Colors.amber),
-            _buildStatRow(
-                Icons.calendar_today,
-                'Today\'s Status',
-                widget.athleteData['status'] as String,
-                (widget.athleteData['progress'] ?? 0.0) == 1.0
-                    ? Colors.green
-                    : Colors.red),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatRow(IconData icon, String title, String value, Color color) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(width: 15),
-          Text(title,
-              style: TextStyle(
-                  fontSize: 16,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7))),
-          const Spacer(),
-          Text(value,
-              style:
-                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildManagementCard(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Training Management',
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary),
-            ),
-            const Divider(),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                icon: Icon(Icons.assignment, color: theme.colorScheme.primary),
-                label: Text(
-                  'Assign a Custom Drill',
-                  style: TextStyle(color: theme.colorScheme.primary),
-                ),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: theme.colorScheme.primary),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                onPressed: () async {
-                  // Wait for the result of the assignment screen, then refresh logs
-                  await Navigator.of(context).pushNamed('/assign-drill',
-                      arguments: widget.athleteData);
-                  _loadLogs();
-                },
-              ),
-            ),
-            const SizedBox(height: 20),
-            _buildDropdownTile(
-              'Difficulty',
-              ['Easy', 'Moderate', 'Hard'],
-              _viewModel.currentDifficulty,
-              (newValue) {
-                _viewModel.setDifficulty(newValue!);
-              },
-            ),
-            _buildDropdownTile(
-              'Skill Focus',
-              ['General', 'Agility', 'Strength', 'Cardio'],
-              _viewModel.currentSkillFocus,
-              (newValue) {
-                _viewModel.setSkillFocus(newValue!);
-              },
-            ),
-            const SizedBox(height: 15),
-            TextField(
-              controller: _notesController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                labelText: 'Coach\'s Notes',
-                hintText: 'e.g., "Focus on form for squats..."',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: _addRestDay,
-                  child: Text('Add Rest Day',
-                      style: TextStyle(color: theme.colorScheme.error)),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: _viewModel.isSaving ? null : _saveRoutineSettings,
-                  child: _viewModel.isSaving
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                              color: Colors.black, strokeWidth: 3),
-                        )
-                      : const Text('Save Settings'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDropdownTile(String title, List<String> options,
-      String currentValue, ValueChanged<String?> onChanged) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('$title:',
-              style:
-                  const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-          DropdownButton<String>(
-            value: currentValue,
-            dropdownColor: theme.colorScheme.surface,
-            style: theme.textTheme.bodyLarge,
-            items: options.map<DropdownMenuItem<String>>((String value) {
-              return DropdownMenuItem<String>(
-                value: value,
-                child: Text(value),
-              );
-            }).toList(),
-            onChanged: onChanged,
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00BCD4).withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child:
+                    Icon(Icons.person, size: 30, color: Colors.blue.shade700),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.athleteData['name'],
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      'Level ${widget.athleteData['level']}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: const Color(0xFF00BCD4),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: _buildStatItem(
+                  Icons.local_fire_department,
+                  'Streak',
+                  '${widget.athleteData['streak']} days',
+                  Colors.orange,
+                ),
+              ),
+              Container(width: 1, height: 40, color: Colors.grey.shade200),
+              Expanded(
+                child: _buildStatItem(
+                  Icons.calendar_today,
+                  'Status',
+                  widget.athleteData['status'] as String,
+                  (widget.athleteData['progress'] ?? 0.0) == 1.0
+                      ? Colors.green
+                      : Colors.blueGrey,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
+  Widget _buildStatItem(
+      IconData icon, String label, String value, Color color) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Icon(icon, color: color, size: 24),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildManagementCard(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Training Management',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey.shade300,
+            ),
+          ),
+          const SizedBox(height: 20),
+          
+          // Assign Button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              icon: const Icon(Icons.assignment_add, size: 20),
+              label: const Text('Assign Custom Drill'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                elevation: 4,
+                shadowColor: theme.primaryColor.withOpacity(0.4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () async {
+                await Navigator.of(context).pushNamed('/assign-drill',
+                    arguments: widget.athleteData);
+                _loadLogs();
+              },
+            ),
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Dropdowns
+          _buildDropdownTile(
+            'Difficulty',
+            ['Easy', 'Moderate', 'Hard'],
+            _viewModel.currentDifficulty,
+            (newValue) {
+              _viewModel.setDifficulty(newValue!);
+            },
+          ),
+          const Divider(height: 24),
+          _buildDropdownTile(
+            'Skill Focus',
+            ['General', 'Agility', 'Strength', 'Cardio'],
+            _viewModel.currentSkillFocus,
+            (newValue) {
+              _viewModel.setSkillFocus(newValue!);
+            },
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Notes Field
+          TextField(
+            controller: _notesController,
+            maxLines: 3,
+            decoration: InputDecoration(
+              labelText: 'Coach\'s Notes',
+              hintText: 'e.g., "Focus on form for squats..."',
+              filled: true,
+              fillColor: const Color(0xFF2A2A2A),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade700),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: theme.primaryColor, width: 1.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          
+          // Action Buttons
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: _addRestDay,
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Add Rest Day'),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton(
+                onPressed:
+                    _viewModel.isSaving ? null : _saveRoutineSettings,
+                style: OutlinedButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  side: BorderSide(color: theme.primaryColor),
+                ),
+                child: _viewModel.isSaving
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save Settings'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDropdownTile(String title, List<String> options,
+      String currentValue, ValueChanged<String?> onChanged) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(title,
+            style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Colors.white)),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2A2A2A),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade700),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: currentValue,
+              isDense: true,
+              icon: const Icon(Icons.arrow_drop_down, color: Colors.white70),
+              dropdownColor: const Color(0xFF2A2A2A),
+              style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white),
+              items: options.map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   // Changed from StreamBuilder to FutureBuilder
   Widget _buildActivityLogs(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _logsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: Padding(
+          return const Center(
+              child: Padding(
             padding: EdgeInsets.all(20.0),
             child: CircularProgressIndicator(),
           ));
@@ -341,14 +493,27 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
         if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         }
-        
+
         final logs = snapshot.data ?? [];
-        
+
         if (logs.isEmpty) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(20.0),
-              child: Text('No activity logs found for this athlete.'),
+          return Container(
+            padding: const EdgeInsets.all(30),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.grey.shade700),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.history, size: 40, color: Colors.grey.shade300),
+                const SizedBox(height: 10),
+                Text(
+                  'No activity logs yet',
+                  style: TextStyle(color: Colors.grey.shade500),
+                ),
+              ],
             ),
           );
         }
@@ -365,27 +530,34 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
               case 'Pending Review':
                 statusIcon = Icons.hourglass_top;
                 statusColor = Colors.amber;
-                trailingWidget = ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary,
-                    foregroundColor: theme.colorScheme.onPrimary,
-                  ),
-                  child: const Text('Review'),
-                  onPressed: () async {
-                    Map<String, dynamic> routeArgs = {
-                      'athleteId': _athleteId,
-                      'logId': logData['id'], // Ensure ID is present
-                      'logData': logData,
-                    };
-                    routeArgs.addAll(widget.athleteData);
+                trailingWidget = SizedBox(
+                  height: 32,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      elevation: 0,
+                    ),
+                    child: const Text('Review'),
+                    onPressed: () async {
+                      Map<String, dynamic> routeArgs = {
+                        'athleteId': _athleteId,
+                        'logId': logData['id'], // Ensure ID is present
+                        'logData': logData,
+                      };
+                      routeArgs.addAll(widget.athleteData);
 
-                    await Navigator.of(context).pushNamed(
-                      '/review-submission',
-                      arguments: routeArgs,
-                    );
-                    // Refresh upon return
-                    _loadLogs();
-                  },
+                      await Navigator.of(context).pushNamed(
+                        '/review-submission',
+                        arguments: routeArgs,
+                      );
+                      // Refresh upon return
+                      _loadLogs();
+                    },
+                  ),
                 );
                 break;
               case 'Approved':
@@ -397,43 +569,92 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
                 statusColor = Colors.red;
                 break;
               default:
-                statusIcon = status == 'Completed' ? Icons.task_alt : Icons.cancel;
-                statusColor = status == 'Completed' ? Colors.green : Colors.red;
+                statusIcon =
+                    status == 'Completed' ? Icons.task_alt : Icons.cancel;
+                statusColor =
+                    status == 'Completed' ? Colors.green : Colors.red;
             }
 
             // Date Parsing safely
             final DateTime dateObj = _parseDate(logData['date']);
             final String date = dateObj.toIso8601String().substring(0, 10);
 
-            return Card(
-              margin: const EdgeInsets.only(bottom: 10),
-              child: ListTile(
-                leading: Icon(
-                  statusIcon,
-                  color: statusColor,
-                ),
-                title: Text(logData['drill'] ?? 'Unknown Drill'),
-                subtitle: Text('Date: $date'),
-                trailing: trailingWidget ??
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '${logData['xp']} XP',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: status == 'Completed'
-                                ? Colors.amber[700]
-                                : Colors.grey,
-                          ),
-                        ),
-                        Text(
-                          status,
-                          style: TextStyle(fontSize: 12, color: statusColor),
-                        ),
-                      ],
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1E1E),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: statusColor.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(statusIcon, color: statusColor, size: 20),
                     ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            logData['drill'] ?? 'Unknown Drill',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Date: $date',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (trailingWidget != null)
+                      trailingWidget
+                    else
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            '${logData['xp']} XP',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: status == 'Completed'
+                                  ? Colors.orange.shade700
+                                  : Colors.grey.shade400,
+                            ),
+                          ),
+                          Text(
+                            status,
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: statusColor,
+                                fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
               ),
             );
           }).toList(),

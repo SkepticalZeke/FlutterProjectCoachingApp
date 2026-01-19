@@ -8,7 +8,8 @@ import '../viewmodel/rewards_viewmodel.dart';
 */
 class RewardsView extends StatefulWidget {
   final Map<String, dynamic> athleteData;
-  const RewardsView({super.key, required this.athleteData});
+  final bool embedded; // When true, no Scaffold wrapper (used in shell)
+  const RewardsView({super.key, required this.athleteData, this.embedded = false});
 
   @override
   State<RewardsView> createState() => _RewardsViewState();
@@ -16,7 +17,7 @@ class RewardsView extends StatefulWidget {
 
 class _RewardsViewState extends State<RewardsView> {
   final _viewModel = RewardsViewModel();
-  
+
   // State for API Data
   late Future<Map<String, dynamic>?> _profileFuture;
 
@@ -43,53 +44,94 @@ class _RewardsViewState extends State<RewardsView> {
         final liveData = snapshot.data ?? widget.athleteData;
 
         return Scaffold(
+          extendBodyBehindAppBar: true,
           appBar: AppBar(
-            title: const Text('My Trophy Cabinet'),
+            title: const Text(
+              'Trophy Cabinet',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            centerTitle: true,
+            automaticallyImplyLeading: !widget.embedded,
+            iconTheme: const IconThemeData(color: Colors.white),
             actions: [
               IconButton(
-                icon: const Icon(Icons.refresh),
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E1E1E),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 10,
+                      )
+                    ],
+                  ),
+                  child:
+                      const Icon(Icons.refresh, size: 20, color: Colors.amber),
+                ),
                 onPressed: _loadData,
-              )
+              ),
+              const SizedBox(width: 16),
             ],
           ),
-          body: Column(
-            children: [
-              // --- 1. Player Level & XP Summary ---
-              // Pass the data directly instead of building a stream inside
-              _buildPlayerSummary(context, liveData),
-
-              // --- 2. Achievements Grid ---
-              Expanded(
-                // Wrap Grid in RefreshIndicator for Pull-to-Refresh
-                child: RefreshIndicator(
-                  onRefresh: () async => _loadData(),
-                  child: GridView.builder(
-                    padding: const EdgeInsets.all(20.0),
-                    // AlwaysScrollable ensures refresh works even if items don't fill screen
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                    ),
-                    itemCount: _viewModel.achievements.length,
-                    itemBuilder: (context, index) {
-                      final achievement = _viewModel.achievements[index];
-                      // Note: In a real app, you would check liveData['achievements'] here
-                      // to see if this specific achievement is unlocked.
-                      // For now, using the static 'unlocked' property from VM.
-                      
-                      return AchievementBadge(
-                        name: achievement['name'] as String,
-                        icon: achievement['icon'] as IconData,
-                        color: achievement['color'] as Color,
-                        isUnlocked: achievement['unlocked'] as bool,
-                      );
-                    },
+          // DARK BACKGROUND
+          body: Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: const Color(0xFF121212),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  // --- 1. Player Level & XP Summary ---
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24.0, vertical: 10.0),
+                    child: _buildPlayerSummary(context, liveData),
                   ),
-                ),
+
+                  // --- 2. Achievements Grid ---
+                  Expanded(
+                    // Wrap Grid in RefreshIndicator for Pull-to-Refresh
+                    child: RefreshIndicator(
+                      onRefresh: () async => _loadData(),
+                      child: GridView.builder(
+                        padding: const EdgeInsets.all(24.0),
+                        // AlwaysScrollable ensures refresh works even if items don't fill screen
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 0.8,
+                        ),
+                        itemCount: _viewModel.achievements.length,
+                        itemBuilder: (context, index) {
+                          final achievement = _viewModel.achievements[index];
+                          // Note: In a real app, you would check liveData['achievements'] here
+                          // to see if this specific achievement is unlocked.
+                          // For now, using the static 'unlocked' property from VM.
+
+                          return AchievementBadge(
+                            name: achievement['name'] as String,
+                            icon: achievement['icon'] as IconData,
+                            color: achievement['color'] as Color,
+                            isUnlocked: achievement['unlocked'] as bool,
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         );
       },
@@ -97,47 +139,92 @@ class _RewardsViewState extends State<RewardsView> {
   }
 
   // 2. Updated to accept Map data directly (No StreamBuilder)
-  Widget _buildPlayerSummary(BuildContext context, Map<String, dynamic> data) {
-    final theme = Theme.of(context);
-
+  Widget _buildPlayerSummary(
+      BuildContext context, Map<String, dynamic> data) {
     int currentLevel = data['level'] ?? 1;
     int totalXp = (data['totalXp'] ?? 0).toInt();
 
-    return Card(
-      margin: const EdgeInsets.all(16.0),
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Container(
-          width: double.infinity, // Center horizontally
-          alignment: Alignment.center,
-          child: Column(
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          colors: [Colors.orange.shade400, Colors.amber.shade300],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.amber.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Current Level: $currentLevel',
+                'Current Level',
                 style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary,
+                  color: Colors.white.withOpacity(0.9),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 8),
               Text(
-                'Total XP Earned: $totalXp',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                '$currentLevel',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 36,
+                  fontWeight: FontWeight.w900,
+                  height: 1.0,
                 ),
               ),
             ],
           ),
-        ),
+          Container(
+            height: 50,
+            width: 1,
+            color: Colors.white.withOpacity(0.3),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                'Total Lifetime XP',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.9),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Row(
+                children: [
+                  const Icon(Icons.bolt, color: Colors.white, size: 20),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$totalXp',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
-// --- AchievementBadge widget (Unchanged) ---
+// --- AchievementBadge widget ---
 class AchievementBadge extends StatelessWidget {
   final String name;
   final IconData icon;
@@ -154,48 +241,59 @@ class AchievementBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isUnlocked ? color.withValues(alpha: 0.7) : Colors.grey[800]!,
-          width: 2,
-        ),
+        color: isUnlocked ? const Color(0xFF1E1E1E) : const Color(0xFF1E1E1E).withOpacity(0.5),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: isUnlocked
             ? [
                 BoxShadow(
-                  color: color.withValues(alpha: 0.2),
-                  blurRadius: 8,
+                  color: color.withOpacity(0.2),
+                  blurRadius: 10,
                   offset: const Offset(0, 4),
                 )
               ]
             : [],
+        border: Border.all(
+          color: isUnlocked ? color.withOpacity(0.3) : Colors.grey.withOpacity(0.2),
+          width: 1,
+        ),
       ),
-      child: Opacity(
-        opacity: isUnlocked ? 1.0 : 0.5,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 44,
-              color: isUnlocked ? color : Colors.grey[600],
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: isUnlocked
+                  ? color.withOpacity(0.2)
+                  : Colors.grey.withOpacity(0.1),
             ),
-            const SizedBox(height: 10),
-            Text(
+            child: Icon(
+              isUnlocked ? icon : Icons.lock,
+              size: 32,
+              color: isUnlocked ? color : Colors.grey.withOpacity(0.5),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Text(
               name,
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: isUnlocked ? FontWeight.bold : FontWeight.normal,
-                color: theme.colorScheme.onSurface,
+                color: isUnlocked
+                    ? Colors.white
+                    : Colors.grey.shade600,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

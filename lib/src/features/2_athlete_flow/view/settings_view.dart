@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 // Import the new ViewModel
 import '../viewmodel/settings_viewmodel.dart';
 // Note: No Firebase imports here!
+
 class SettingsView extends StatefulWidget {
   final Map<String, dynamic> athleteData;
   const SettingsView({super.key, required this.athleteData});
@@ -29,12 +30,15 @@ class _SettingsViewState extends State<SettingsView> {
       context: context,
       builder: (context) {
         return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text('Change Display Name'),
           content: TextField(
             controller: nameController,
             decoration: const InputDecoration(
               hintText: "Enter new name",
               labelText: "Name",
+              border: OutlineInputBorder(),
             ),
             textCapitalization: TextCapitalization.words,
           ),
@@ -45,16 +49,30 @@ class _SettingsViewState extends State<SettingsView> {
             ),
             ElevatedButton(
               onPressed: () async {
-                final success = await _viewModel.updateName(athleteId, nameController.text);
+                final success = await _viewModel.updateName(
+                    athleteId, nameController.text);
                 if (mounted) {
                   Navigator.pop(context);
                   if (success) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Name updated successfully!')),
+                      SnackBar(
+                        content: const Text('Name updated successfully!'),
+                        backgroundColor: Colors.green,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
                     );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(_viewModel.errorMessage ?? 'Error')),
+                      SnackBar(
+                        content:
+                            Text(_viewModel.errorMessage ?? 'Error'),
+                        backgroundColor: Colors.red,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
                     );
                   }
                 }
@@ -75,6 +93,8 @@ class _SettingsViewState extends State<SettingsView> {
       context: context,
       builder: (context) {
         return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text('Change Login PIN'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -100,16 +120,30 @@ class _SettingsViewState extends State<SettingsView> {
             ),
             ElevatedButton(
               onPressed: () async {
-                final success = await _viewModel.updatePin(athleteId, pinController.text);
+                final success =
+                    await _viewModel.updatePin(athleteId, pinController.text);
                 if (mounted) {
                   Navigator.pop(context);
                   if (success) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('PIN updated successfully!')),
+                      SnackBar(
+                        content: const Text('PIN updated successfully!'),
+                        backgroundColor: Colors.green,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
                     );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(_viewModel.errorMessage ?? 'Error')),
+                      SnackBar(
+                        content:
+                            Text(_viewModel.errorMessage ?? 'Error'),
+                        backgroundColor: Colors.red,
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
                     );
                   }
                 }
@@ -127,19 +161,26 @@ class _SettingsViewState extends State<SettingsView> {
       context: context,
       builder: (BuildContext ctx) {
         return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: const Text('Confirm Logout'),
           content: const Text('Are you sure you want to log out?'),
           actions: [
             TextButton(
-              child: const Text('Cancel'),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
               onPressed: () => Navigator.of(ctx).pop(),
             ),
-            TextButton(
-              child: const Text('Log Out', style: TextStyle(color: Colors.red)),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Log Out'),
               onPressed: () {
                 Navigator.of(ctx).pop();
                 _viewModel.logout();
-                Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                Navigator.of(context)
+                    .pushNamedAndRemoveUntil('/login', (route) => false);
               },
             ),
           ],
@@ -153,118 +194,194 @@ class _SettingsViewState extends State<SettingsView> {
     final theme = Theme.of(context);
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: const Text(
+          'Settings',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: ListView(
-        children: [
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Text(
-              'Profile',
-              style: TextStyle(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.bold,
+      // DARK BACKGROUND
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        color: const Color(0xFF121212),
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.all(24.0),
+            children: [
+              _buildSectionTitle('Profile', theme),
+              _buildSectionCard(
+                children: [
+                  _buildSettingsTile(
+                    context: context,
+                    title: 'Change Display Name',
+                    icon: Icons.person_outline,
+                    onTap: _showChangeNameDialog,
+                  ),
+                  const Divider(height: 1),
+                  _buildSettingsTile(
+                    context: context,
+                    title: 'Change Login PIN',
+                    icon: Icons.lock_outline,
+                    onTap: _showChangePinDialog,
+                  ),
+                ],
               ),
-            ),
-          ),
-          
-          // 1. Change Name
-          _buildSettingsTile(
-            context: context,
-            title: 'Change Display Name',
-            icon: Icons.person_outline,
-            onTap: _showChangeNameDialog,
-          ),
+              const SizedBox(height: 24),
 
-          // 2. Change PIN
-          _buildSettingsTile(
-            context: context,
-            title: 'Change Login PIN',
-            icon: Icons.lock_outline,
-            onTap: _showChangePinDialog,
-          ),
-
-          const Divider(),
-
-          // --- RESTORED: App Preferences Section ---
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
-            child: Text(
-              'Preferences',
-              style: TextStyle(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.bold,
+              _buildSectionTitle('Preferences', theme),
+              _buildSectionCard(
+                children: [
+                  SwitchListTile(
+                    secondary: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: theme.primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(Icons.volume_up,
+                          color: theme.primaryColor, size: 20),
+                    ),
+                    title: const Text('App Sounds',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w500, fontSize: 15)),
+                    value: _appSounds,
+                    activeColor: theme.primaryColor,
+                    onChanged: (bool value) {
+                      setState(() {
+                        _appSounds = value;
+                      });
+                    },
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    secondary: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: theme.primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(Icons.notifications_active,
+                          color: theme.primaryColor, size: 20),
+                    ),
+                    title: const Text('Push Notifications',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w500, fontSize: 15)),
+                    value: _pushNotifications,
+                    activeColor: theme.primaryColor,
+                    onChanged: (bool value) {
+                      setState(() {
+                        _pushNotifications = value;
+                      });
+                    },
+                  ),
+                ],
               ),
-            ),
-          ),
+              const SizedBox(height: 24),
 
-          // 3. App Sounds Toggle
-          SwitchListTile(
-            secondary: Icon(Icons.volume_up, color: theme.colorScheme.primary),
-            title: const Text('App Sounds', style: TextStyle(fontWeight: FontWeight.w500)),
-            value: _appSounds,
-            activeColor: theme.colorScheme.primary,
-            onChanged: (bool value) {
-              setState(() {
-                _appSounds = value;
-              });
-              // TODO: Save preference to SharedPreferences or Database
-            },
-          ),
-
-          // 4. Push Notifications Toggle
-          SwitchListTile(
-            secondary: Icon(Icons.notifications_active, color: theme.colorScheme.primary),
-            title: const Text('Push Notifications', style: TextStyle(fontWeight: FontWeight.w500)),
-            value: _pushNotifications,
-            activeColor: theme.colorScheme.primary,
-            onChanged: (bool value) {
-              setState(() {
-                _pushNotifications = value;
-              });
-              // TODO: Save preference to SharedPreferences or Database
-            },
-          ),
-
-          const Divider(),
-          
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
-            child: Text(
-              'App Info',
-              style: TextStyle(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.bold,
+              _buildSectionTitle('App Info', theme),
+              _buildSectionCard(
+                children: [
+                  _buildSettingsTile(
+                    context: context,
+                    title: 'Help & Support',
+                    icon: Icons.support_agent,
+                    onTap: () {},
+                  ),
+                  const Divider(height: 1),
+                  _buildSettingsTile(
+                    context: context,
+                    title: 'About CoachFitness',
+                    icon: Icons.info_outline,
+                    onTap: () {},
+                  ),
+                ],
               ),
-            ),
-          ),
-           _buildSettingsTile(
-            context: context,
-            title: 'Help & Support',
-            icon: Icons.support_agent,
-            onTap: () {},
-          ),
+              const SizedBox(height: 40),
 
-          const SizedBox(height: 40),
-          
-          // Logout Button
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0),
-            child: ElevatedButton(
-              onPressed: () => _showLogoutConfirmDialog(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red[600],
-                padding: const EdgeInsets.symmetric(vertical: 15),
+              // Logout Button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.red.withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ElevatedButton(
+                    onPressed: () => _showLogoutConfirmDialog(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1E1E1E),
+                      foregroundColor: Colors.red[400],
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(color: Colors.red.shade700),
+                      ),
+                    ),
+                    child: const Text(
+                      'Log Out',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
               ),
-              child: const Text(
-                'Log Out',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-            ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // --- Helper Widgets ---
+
+  Widget _buildSectionTitle(String title, ThemeData theme) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0, left: 8.0),
+      child: Text(
+        title,
+        style: TextStyle(
+          color: theme.primaryColor,
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 1.0,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionCard({required List<Widget> children}) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
+      ),
+      child: Column(
+        children: children,
       ),
     );
   }
@@ -277,11 +394,20 @@ class _SettingsViewState extends State<SettingsView> {
   }) {
     final theme = Theme.of(context);
     return ListTile(
-      leading: Icon(icon, color: theme.colorScheme.primary),
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: theme.primaryColor.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(icon, color: theme.primaryColor, size: 20),
+      ),
       title: Text(title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: Colors.white)),
       trailing: Icon(Icons.chevron_right,
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.5)),
+          color: Colors.grey.shade600, size: 20),
       onTap: onTap,
     );
   }

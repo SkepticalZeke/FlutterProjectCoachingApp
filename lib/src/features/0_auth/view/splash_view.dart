@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-// Import the new ViewModel
+import 'package:lottie/lottie.dart'; // Import Lottie package
 import '../viewmodel/splash_viewmodel.dart';
 
 /*
@@ -78,17 +78,23 @@ class _SplashViewState extends State<SplashView> {
     final theme = Theme.of(context);
     
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: const Color(0xFF121212), // Dark background
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.sports_tennis,
-              size: 100,
-              color: theme.colorScheme.primary,
+            // REPLACED ICON WITH LOTTIE ANIMATION
+            SizedBox(
+              height: 250,
+              width: 250,
+              child: Lottie.asset(
+                'assets/animations/splash_running.json',
+                fit: BoxFit.contain,
+              ),
             ),
+            
             const SizedBox(height: 20),
+            
             Text(
               'CoachFitness',
               style: theme.textTheme.headlineMedium?.copyWith(
@@ -96,12 +102,25 @@ class _SplashViewState extends State<SplashView> {
                 color: theme.colorScheme.primary,
               ),
             ),
+            
             const SizedBox(height: 40),
-            const CircularProgressIndicator(),
+            
+            // Minimal loading indicator
+            SizedBox(
+              height: 20,
+              width: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: theme.colorScheme.primary.withOpacity(0.5),
+              ),
+            ),
             const SizedBox(height: 10),
+            
             Text(
               'Checking login status...',
-              style: theme.textTheme.bodyMedium,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: Colors.grey[500],
+              ),
             ),
           ],
         ),

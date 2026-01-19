@@ -8,7 +8,7 @@ import 'src/features/0_auth/view/athlete_signup_view.dart'; // <--- ADD THIS LIN
 import 'src/features/0_auth/view/splash_view.dart';
 import 'src/features/0_auth/view/role_selection_view.dart';
 import 'src/features/0_auth/view/athlete_login_view.dart';
-import 'src/features/2_athlete_flow/view/athlete_dashboard_view.dart';
+import 'src/features/2_athlete_flow/view/athlete_shell_view.dart';
 import 'src/features/0_auth/view/coach_login_view.dart';
 import 'src/features/2_athlete_flow/view/training_view.dart';
 import 'src/features/2_athlete_flow/view/avatar_view.dart';
@@ -139,12 +139,12 @@ class CoachFitnessApp extends StatelessWidget {
             },
           );
         }
-        // Athlete Home Screen
+        // Athlete Home Screen - use shell for persistent nav bar
         if (settings.name == '/athlete-home') {
           final athleteData = settings.arguments as Map<String, dynamic>;
           return MaterialPageRoute(
             builder: (context) {
-              return AthleteDashboardView(athleteData: athleteData);
+              return AthleteShellView(athleteData: athleteData);
             },
           );
         }

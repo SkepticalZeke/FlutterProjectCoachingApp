@@ -6,6 +6,7 @@ import 'src/features/0_auth/view/athlete_signup_view.dart'; // <--- ADD THIS LIN
 
 // --- Screen Imports Updated to new MVVM structure ---
 import 'src/features/0_auth/view/splash_view.dart';
+import 'src/features/0_auth/view/onboarding_view.dart';
 import 'src/features/0_auth/view/role_selection_view.dart';
 import 'src/features/0_auth/view/athlete_login_view.dart';
 import 'src/features/2_athlete_flow/view/athlete_shell_view.dart';
@@ -116,6 +117,7 @@ class CoachFitnessApp extends StatelessWidget {
       routes: {
         // General Flow (from 0_auth)
         '/': (context) => const SplashView(),
+        '/onboarding': (context) => const OnboardingView(),
         '/role-selection': (context) => const RoleSelectionView(),
         '/login': (context) => const AthleteLoginView(),
         '/athlete-signup': (context) => const AthleteSignupView(),
@@ -168,8 +170,7 @@ class CoachFitnessApp extends StatelessWidget {
         if (settings.name == '/review-submission') {
           final routeArgs = settings.arguments as Map<String, dynamic>;
           return MaterialPageRoute(
-            builder: (context) =>
-                ReviewSubmissionView(routeArgs: routeArgs),
+            builder: (context) => ReviewSubmissionView(routeArgs: routeArgs),
           );
         }
 
@@ -178,32 +179,27 @@ class CoachFitnessApp extends StatelessWidget {
 
         if (settings.name == '/training') {
           return MaterialPageRoute(
-            builder: (context) =>
-                TrainingView(athleteData: athleteData),
+            builder: (context) => TrainingView(athleteData: athleteData),
           );
         }
         if (settings.name == '/avatar') {
           return MaterialPageRoute(
-            builder: (context) =>
-                AvatarView(athleteData: athleteData),
+            builder: (context) => AvatarView(athleteData: athleteData),
           );
         }
         if (settings.name == '/rewards') {
           return MaterialPageRoute(
-            builder: (context) =>
-                RewardsView(athleteData: athleteData),
+            builder: (context) => RewardsView(athleteData: athleteData),
           );
         }
         if (settings.name == '/progress') {
           return MaterialPageRoute(
-            builder: (context) =>
-                ProgressView(athleteData: athleteData),
+            builder: (context) => ProgressView(athleteData: athleteData),
           );
         }
         if (settings.name == '/settings') {
           return MaterialPageRoute(
-            builder: (context) =>
-                SettingsView(athleteData: athleteData),
+            builder: (context) => SettingsView(athleteData: athleteData),
           );
         }
 

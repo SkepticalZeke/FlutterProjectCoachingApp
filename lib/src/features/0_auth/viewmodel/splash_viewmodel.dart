@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/services/auth_repository.dart';
 
 /*
@@ -23,7 +24,7 @@ class SplashViewModel extends ChangeNotifier {
     // First, check if there's a saved session (for users who logged in before closing the app)
     if (await _authRepo.isSessionActive()) {
       final String? userType = await _authRepo.getSavedUserType();
-      
+
       if (userType == 'coach') {
         // Resume coach session
         return '/coach-home';
@@ -35,6 +36,12 @@ class SplashViewModel extends ChangeNotifier {
 
     // If no saved session, check Firebase auth state
     if (user == null) {
+      // Check if onboarding has been completed
+      final prefs = await SharedPreferences.getInstance();
+      final onboardingComplete = prefs.getBool('onboardingComplete') ?? false;
+      if (!onboardingComplete) {
+        return '/onboarding';
+      }
       return '/role-selection';
     }
     // If a user exists (meaning a Coach is logged in via Firebase), go to the coach home.

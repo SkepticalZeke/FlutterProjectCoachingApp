@@ -24,6 +24,7 @@ import 'src/features/2_athlete_flow/view/drill_detail_view.dart';
 import 'src/features/1_coach_flow/view/create_drill_view.dart';
 import 'src/features/1_coach_flow/view/assign_drill_view.dart';
 import 'src/features/1_coach_flow/view/review_submission_view.dart';
+import 'src/features/1_coach_flow/view/drill_library_view.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -129,6 +130,7 @@ class CoachFitnessApp extends StatelessWidget {
         '/coach-registration': (context) => const CoachRegistrationView(),
         '/coach-notifications': (context) => const CoachNotificationsView(),
         '/create-drill': (context) => const CreateDrillView(),
+        '/drill-library': (context) => const DrillLibraryView(),
       },
       // --- onGenerateRoute for passing arguments ---
       onGenerateRoute: (settings) {

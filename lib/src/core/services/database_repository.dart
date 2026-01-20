@@ -279,6 +279,43 @@ Future<void> createCoachProfile({
     return Map<String, dynamic>.from(response);
   }
 
+  // Get a single drill
+  Future<Map<String, dynamic>?> getDrill(String drillId) async {
+    try {
+      final response = await _api.post('/api/coach/get-drill', {
+        'drillId': drillId,
+      });
+      return response;
+    } catch (e) {
+      debugPrint("Error fetching drill: $e");
+      return null;
+    }
+  }
+
+  // Delete a drill
+  Future<void> deleteDrill(String drillId) async {
+    await _api.post('/api/coach/delete-drill', {
+      'drillId': drillId,
+    });
+  }
+
+  // Update a drill (metadata only - no video upload)
+  Future<void> updateDrill({
+    required String drillId,
+    required String name,
+    required String goal,
+    required String skillFocus,
+    required double xp,
+  }) async {
+    await _api.post('/api/coach/update-drill', {
+      'drillId': drillId,
+      'name': name,
+      'goal': goal,
+      'skillFocus': skillFocus,
+      'xp': xp,
+    });
+  }
+
   // 2. New: Coach Linking Logic
   Future<void> linkAthlete(String connectionCode) async {
     await _api.post('/api/coach/link-athlete', {

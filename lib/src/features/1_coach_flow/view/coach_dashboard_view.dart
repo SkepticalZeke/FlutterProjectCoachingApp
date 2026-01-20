@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../viewmodel/coach_dashboard_viewmodel.dart';
+import 'drill_library_view.dart';
 
 class CoachDashboardView extends StatefulWidget {
   const CoachDashboardView({super.key});
@@ -16,7 +17,6 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
 
   // Data Futures
   late Future<List<Map<String, dynamic>>> _athletesFuture;
-  late Future<List<Map<String, dynamic>>> _drillsFuture;
   late Future<List<Map<String, dynamic>>> _notificationsFuture;
 
   @override
@@ -29,7 +29,6 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
   void _refreshAll() {
     setState(() {
       _athletesFuture = _viewModel.fetchAthletes();
-      _drillsFuture = _viewModel.fetchCoachDrills();
       _notificationsFuture = _viewModel.fetchPendingSubmissions();
     });
   }
@@ -301,112 +300,7 @@ class _CoachDashboardViewState extends State<CoachDashboardView> {
   // TAB 1: DRILL LIBRARY
   // =======================================================
   Widget _buildDrillsTab() {
-    return RefreshIndicator(
-      onRefresh: () async => _refreshAll(),
-      child: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _drillsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final drills = snapshot.data ?? [];
-
-          if (drills.isEmpty) {
-            return _buildEmptyState(
-              icon: Icons.video_call,
-              message: "No drills created.\nRecord one to get started!",
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(20),
-            itemCount: drills.length,
-            physics: const AlwaysScrollableScrollPhysics(),
-            itemBuilder: (context, index) {
-              final drill = drills[index];
-              return Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E1E),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: [
-                      // Video Icon
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.deepPurple.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(Icons.play_circle_fill,
-                            size: 28, color: Colors.deepPurple.shade400),
-                      ),
-                      const SizedBox(width: 16),
-                      // Info
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              drill['name'] ?? 'Untitled Drill',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Text(
-                                  drill['skillFocus'] ?? 'General',
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600),
-                                ),
-                                const SizedBox(width: 8),
-                                Icon(Icons.circle,
-                                    size: 4, color: Colors.grey.shade300),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '${drill['xp']} XP',
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.orange.shade700,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Edit Icon
-                      IconButton(
-                        icon: Icon(Icons.edit,
-                            size: 20, color: Colors.grey.shade400),
-                        onPressed: () {
-                          // Optional: Navigate to edit drill
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
-    );
+    return const DrillLibraryView();
   }
 
   // =======================================================

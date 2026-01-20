@@ -97,7 +97,7 @@ class _AthleteLoginViewState extends State<AthleteLoginView> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E1E1E),
+                    color: const Color.fromARGB(255, 116, 102, 102),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(

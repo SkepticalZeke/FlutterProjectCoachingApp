@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import '../viewmodel/training_viewmodel.dart';
-// Import Drill Detail for navigation
-import 'drill_detail_view.dart';
 
 class TrainingView extends StatefulWidget {
   final Map<String, dynamic> athleteData;
@@ -274,8 +272,7 @@ class _TrainingViewState extends State<TrainingView> {
                           'athleteId': widget.athleteData['id'],
                           'drillData': {
                             ...drill,
-                            'coachUid': widget.athleteData[
-                                'coachUid'], // Pass coach ID for upload
+                            'coachUid': widget.athleteData['coachUid'] ?? '', // Safe null handling
                           },
                         },
                       );

@@ -103,8 +103,6 @@ class _AvatarViewState extends State<AvatarView>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     // 5. FutureBuilder replaces StreamBuilder
     return FutureBuilder<Map<String, dynamic>?>(
       future: _profileFuture,
@@ -384,8 +382,6 @@ class _AvatarViewState extends State<AvatarView>
     Map<String, dynamic> liveAthleteData,
     List<dynamic> unlockedItems,
   ) {
-    final theme = Theme.of(context);
-
     return GridView.builder(
       padding: const EdgeInsets.only(bottom: 20),
       // AlwaysScrollableScrollPhysics ensures Pull-to-Refresh works even if list is short

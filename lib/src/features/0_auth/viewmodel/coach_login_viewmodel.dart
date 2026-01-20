@@ -42,7 +42,7 @@ class CoachLoginViewModel extends ChangeNotifier {
           await _authRepo.saveCoachSession();
         } catch (e) {
           // Log warning but don't fail login if session save fails
-          print('Warning: Failed to save session: $e');
+          debugPrint('Warning: Failed to save session: $e');
         }
         
         _setLoading(false);

@@ -1,10 +1,5 @@
 import 'package:flutter/material.dart';
 import '../viewmodel/coach_dashboard_viewmodel.dart';
-// Import Create Drill View for navigation
-import 'create_drill_view.dart';
-// Import Review View for navigation
-import 'review_submission_view.dart';
-import 'coach_athlete_detail_view.dart';
 
 class CoachDashboardView extends StatefulWidget {
   const CoachDashboardView({super.key});

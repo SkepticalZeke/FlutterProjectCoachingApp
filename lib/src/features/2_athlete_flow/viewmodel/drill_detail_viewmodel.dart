@@ -47,19 +47,24 @@ class DrillDetailViewModel extends ChangeNotifier {
 
   // 5. Initialization Logic (called by View's initState)
   void initialize(Map<String, dynamic> routeArgs) {
-    _drillData = routeArgs['drillData'] as Map<String, dynamic>;
-    _athleteId = routeArgs['athleteId'] as String;
-    _drillId = routeArgs['drillId'] as String;
+    try {
+      _drillData = routeArgs['drillData'] as Map<String, dynamic>? ?? {};
+      _athleteId = routeArgs['athleteId'] as String? ?? '';
+      _drillId = routeArgs['drillId'] as String? ?? '';
 
-    drillName = _drillData['name'] ?? 'Drill';
-    drillGoal = _drillData['goal'] ?? 'Complete the drill.';
-    _currentTime = _drillData['time'] ?? 60;
-    coachVideoUrl = _drillData['videoUrl'] ?? '';
+      drillName = _drillData['name'] ?? 'Drill';
+      drillGoal = _drillData['goal'] ?? 'Complete the drill.';
+      _currentTime = (_drillData['time'] as int?) ?? 60;
+      coachVideoUrl = _drillData['videoUrl'] as String? ?? '';
 
-    if (coachVideoUrl.isNotEmpty) {
-      _initializeCoachVideoPlayer();
+      if (coachVideoUrl.isNotEmpty) {
+        _initializeCoachVideoPlayer();
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error initializing drill detail: $e');
+      notifyListeners();
     }
-    notifyListeners();
   }
 
   void _initializeCoachVideoPlayer() {
@@ -154,7 +159,7 @@ class DrillDetailViewModel extends ChangeNotifier {
         xpGained: _drillData['xp'] ?? 50,
         coachVideoUrl: coachVideoUrl,
         athleteVideoUrl: athleteVideoUrl,
-        coachUid: _drillData['coachUid'] as String, // Pass the required coachUid
+        coachUid: _drillData['coachUid'] as String? ?? '', // Handle null safely
       );
 
       _isUploading = false;

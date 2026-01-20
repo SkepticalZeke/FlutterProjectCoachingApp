@@ -1,14 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; 
+import 'package:flutter/foundation.dart';
 import '../models/athlete.dart';
 import 'api_service.dart'; // Import the helper
 
 class DatabaseRepository {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   final ApiService _api = ApiService(); // Use the API helper
-
-  String? get _coachUid => _auth.currentUser?.uid;
 
   // --- WRITES: MOVED TO CLOUD RUN ---
 
@@ -199,7 +194,7 @@ Future<void> createCoachProfile({
       
       // We return null here to let the ViewModel handle the "Invalid login" state
       // just like it did before.
-      print("Login failed: $e");
+      debugPrint("Login failed: $e");
       return null; 
     }
   }
@@ -266,7 +261,7 @@ Future<void> createCoachProfile({
       });
       return List<Map<String, dynamic>>.from(response);
     } catch (e) {
-      print("Error fetching coach drills: $e");
+      debugPrint("Error fetching coach drills: $e");
       return [];
     }
   }

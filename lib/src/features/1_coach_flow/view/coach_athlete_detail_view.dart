@@ -98,8 +98,9 @@ class _CoachAthleteDetailViewState extends State<CoachAthleteDetailView> {
   // Helper to parse dates from API (String or Timestamp Map)
   DateTime _parseDate(dynamic dateData) {
     if (dateData == null) return DateTime.now();
-    if (dateData is String)
+    if (dateData is String) {
       return DateTime.tryParse(dateData) ?? DateTime.now();
+    }
     // Handle Firestore Timestamp sent as Map {_seconds: ..., _nanoseconds: ...}
     if (dateData is Map && dateData.containsKey('_seconds')) {
       return DateTime.fromMillisecondsSinceEpoch(dateData['_seconds'] * 1000);

@@ -476,7 +476,6 @@ class SkillProgressIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     // Interpolate color based on progress (Red -> Green)
     final Color progressColor =
         HSVColor.fromAHSV(1.0, (progress / 100) * 120, 0.8, 0.9).toColor();

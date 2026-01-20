@@ -46,7 +46,7 @@ class AthleteLoginViewModel extends ChangeNotifier {
           await _authRepo.saveAthleteSession(athleteData);
         } catch (e) {
           // Log warning but don't fail login if session save fails
-          print('Warning: Failed to save session: $e');
+          debugPrint('Warning: Failed to save session: $e');
         }
         
         _setLoading(false);

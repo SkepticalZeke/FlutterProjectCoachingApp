@@ -645,8 +645,7 @@ class _AthleteDashboardViewState extends State<AthleteDashboardView> {
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        IconData(drill['iconData'] ?? 0xe28f,
-                            fontFamily: 'MaterialIcons'),
+                        Icons.fitness_center, // Use predefined Material icon instead of dynamic IconData
                         color: isCompleted
                             ? Colors.green
                             : theme.primaryColor,
